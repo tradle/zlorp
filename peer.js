@@ -102,7 +102,10 @@ Peer.prototype.connect = function(addr) {
 
   var client = this.clients[addr] = new rudp.Client(this.socket, host, port)
   client.on('data', function(msg) {
-    if (bufferEquals(msg, START_MSG)) return
+    if (bufferEquals(msg, START_MSG)) {
+      debug('connected to', self.pub, 'at', addr)
+      return
+    }
 
     try {
       msg = self.decrypt(msg)

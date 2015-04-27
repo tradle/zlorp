@@ -5,8 +5,8 @@ var split = require('split')
 var Node = require('../')
 var privKeys = require('./priv')
 var ec = require('../crypto').ec
-var name = process.argv[2]
-if (!privKeys[name]) throw new Error('no key found for ' + name)
+var myName = process.argv[2]
+if (!privKeys[myName]) throw new Error('no key found for ' + name)
 
 var pubKeys = {}
 for (var name in privKeys) {
@@ -15,12 +15,12 @@ for (var name in privKeys) {
 
 var node = new Node({
   dht: './dht.json',
-  priv: privKeys[name],
+  priv: privKeys[myName],
   port: process.argv[3] ? Number(process.argv[3]) : undefined
 })
 
 var others = Object.keys(privKeys).filter(function(n) {
-  return n !== name
+  return n !== myName
 })
 
 node.once('ready', function() {
