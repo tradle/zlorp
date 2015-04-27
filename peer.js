@@ -36,6 +36,7 @@ function Peer(options) {
 
   this.queue = []
   this.clients = {}
+  this.connected = {}
 }
 
 inherits(Peer, EventEmitter)
@@ -43,19 +44,6 @@ inherits(Peer, EventEmitter)
 Peer.prototype._watchDHT = function() {
   var self = this
   var me = this.me
-
-  ;(function loop() {
-    self._announcer = setTimeout(function() {
-      // debug('announcing', me.forward)
-      debug('announcing', self.myInfoHash)
-      self.dht.announce(self.myInfoHash, self.port)
-      debug('looking up', self.myInfoHash, self.peerInfoHash)
-      self.dht.lookup(self.peerInfoHash)
-      self.dht.lookup(self.myInfoHash, loop)
-      // self.dht.announce(me.forward, self.port, announce)
-      // self.dht.announce(peer.reverse, self.port)
-    }, INTERVAL)
-  })()
 
   // ;(function lookup() {
   //   self._monitor = setTimeout(function() {
@@ -83,6 +71,23 @@ Peer.prototype._watchDHT = function() {
   function connect(addr) {
     self.connect(addr)
   }
+
+  function lookupAndAnnounce() {
+      // debug('announcing', me.forward)
+    debug('announcing', self.myInfoHash)
+    self.dht.announce(self.myInfoHash, self.port)
+    debug('looking up', self.myInfoHash, self.peerInfoHash)
+    self.dht.lookup(self.peerInfoHash)
+    self.dht.lookup(self.myInfoHash, loop)
+    // self.dht.announce(me.forward, self.port, announce)
+    // self.dht.announce(peer.reverse, self.port)
+  }
+
+  function loop() {
+    self._announcer = setTimeout(lookupAndAnnounce, INTERVAL)
+  }
+
+  lookupAndAnnounce()
 }
 
 Peer.prototype.connect = function(addr) {
@@ -102,24 +107,24 @@ Peer.prototype.connect = function(addr) {
 
   var client = this.clients[addr] = new rudp.Client(this.socket, host, port)
   client.on('data', function(msg) {
+    try {
+      msg = self.decrypt(msg)
+    } catch (err) {
+      return self.emit('warn', 'Unable to decrypt message', msg)
+    }
+
     if (bufferEquals(msg, START_MSG)) {
+      self.connected[addr] = true
       debug('connected to', self.pub, 'at', addr)
       return
     }
+    else if (!self.connected[addr]) return
 
-    try {
-      msg = self.decrypt(msg)
-      self.emit('data', msg)
-    } catch (err) {
-      self.emit('warn', 'Unable to decrypt message', msg)
-    }
+    self.emit('data', msg)
   })
 
-  client.send(START_MSG)
-
-  if (this.queue.length) {
-    this.queue.forEach(this.send, this)
-  }
+  this.queue.unshift(START_MSG)
+  this.queue.forEach(this.send, this)
 }
 
 Peer.prototype.send = function(msg) {
