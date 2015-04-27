@@ -99,12 +99,16 @@ Peer.prototype.connect = function(addr) {
       return self.emit('warn', 'Unable to decrypt message', msg)
     }
 
-    if (bufferEquals(msg, START_MSG)) {
-      self.connected[addr] = true
+    if (!self.connected[addr]) {
       debug('connected to', self.pub, 'at', addr)
-      return
+      self.connected[addr] = true
     }
-    else if (!self.connected[addr]) return
+
+    if (bufferEquals(msg, START_MSG)) return
+
+    //   return
+    // }
+    // else if (!self.connected[addr]) return
 
     self.emit('data', msg)
   })
