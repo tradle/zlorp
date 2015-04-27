@@ -45,16 +45,6 @@ Peer.prototype._watchDHT = function() {
   var self = this
   var me = this.me
 
-  // ;(function lookup() {
-  //   self._monitor = setTimeout(function() {
-  //     // debug('looking for peers for', me.reverse)
-  //     // self.dht.lookup(me.reverse, lookup)
-  //     debug('looking up', self.myInfoHash, self.peerInfoHash)
-  //     self.dht.lookup(self.myInfoHash, lookup)
-  //     self.dht.lookup(self.peerInfoHash)
-  //   }, INTERVAL)
-  // })()
-
   this.dht.on('announce', function(addr, infoHash, from) {
     if (infoHash === self.peerInfoHash) {
       debug('got peer\'s announce', addr)
@@ -73,14 +63,10 @@ Peer.prototype._watchDHT = function() {
   }
 
   function lookupAndAnnounce() {
-      // debug('announcing', me.forward)
-    debug('announcing', self.myInfoHash)
-    self.dht.announce(self.myInfoHash, self.port)
-    debug('looking up', self.myInfoHash, self.peerInfoHash)
-    self.dht.lookup(self.peerInfoHash)
+    debug('announcing', self.peerInfoHash)
+    self.dht.announce(self.peerInfoHash, self.port)
+    debug('looking up', self.myInfoHash)
     self.dht.lookup(self.myInfoHash, loop)
-    // self.dht.announce(me.forward, self.port, announce)
-    // self.dht.announce(peer.reverse, self.port)
   }
 
   function loop() {
