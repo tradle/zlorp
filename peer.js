@@ -2,8 +2,10 @@
 var rudp = require('rudp')
 var EventEmitter = require('events').EventEmitter
 var inherits = require('util').inherits
+var bufferEquals = require('buffer-equal')
 var debug = require('debug')('peer')
 var crypto = require('./crypto')
+var START_MSG = new Buffer('__________________________________________________')
 var INTERVAL = 10000
 
 function Peer(options) {
@@ -100,6 +102,8 @@ Peer.prototype.connect = function(addr) {
 
   var client = this.clients[addr] = new rudp.Client(this.socket, host, port)
   client.on('data', function(msg) {
+    if (bufferEquals(msg, START_MSG)) return
+
     try {
       msg = self.decrypt(msg)
       self.emit('data', msg)
@@ -107,6 +111,8 @@ Peer.prototype.connect = function(addr) {
       self.emit('warn', 'Unable to decrypt message', msg)
     }
   })
+
+  client.send(START_MSG)
 
   if (this.queue.length) {
     this.queue.forEach(this.send, this)

@@ -23,6 +23,7 @@
   "homepage": "https://github.com/mvayngrib/p2p",
   "dependencies": {
     "bittorrent-dht": "git://github.com/tradle/bittorrent-dht",
+    "buffer-equal": "0.0.1",
     "debug": "^2.1.3",
     "elliptic": "^3.0.3",
     "midentity": "git://github.com/mvayngrib/identity#dev",
