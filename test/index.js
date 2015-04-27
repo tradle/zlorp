@@ -34,6 +34,14 @@ node.once('ready', function() {
         node.send(line, pubKeys[name])
       })
     })
+
+  node.on('data', function(data, from) {
+    for (var name in pubKeys) {
+      if (pubKeys[name] === from) {
+        console.log(name + ': ' + data.toString())
+      }
+    }
+  })
 })
 
 process.on('exit', exitHandler.bind(null,{cleanup:true}));

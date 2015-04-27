@@ -100,12 +100,16 @@ Node.prototype.addPeer = function(pubKey) {
 
   if (this.getPeer(pubKey)) return
 
-  this._peers[pubKey] = new Peer({
+  var peer = this._peers[pubKey] = new Peer({
     myIp: this.ip,
     priv: this._key,
     pub: pubKey,
     dht: this._dht,
     socket: this._socket
+  })
+
+  peer.on('data', function(data) {
+    self.emit('data', data, pubKey)
   })
 }
 
