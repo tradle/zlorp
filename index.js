@@ -23,11 +23,6 @@ function Node(options) {
   this._priv = options.priv
   this._key = ec.keyFromPrivate(this._priv)
   this._pubKey = this._key.getPublic(true, 'hex')
-  // this._me = options.identity
-  // this._myPubKey = this._me.keys({
-  //   type: 'ec',
-  //   purpose: DHT_KEY_TYPE
-  // })[0].pubKeyString()
 
   externalIp(function(err, ip) {
     self._ipDone = true
@@ -63,6 +58,7 @@ Node.prototype._loadDHT = function(dht) {
 
   if (!this._dht) this._dht = new DHT()
 
+  this._dht.setMaxListeners(500)
   this._dht.once('ready', this._checkReady.bind(this))
 }
 
@@ -93,7 +89,7 @@ Node.prototype.removePeer = function(pubKey) {
   }
 }
 
-Node.prototype.addPeer = function(pubKey) {
+Node.prototype.addPeer = function(pubKey, name) {
   var self = this
 
   if (!this.ready) return this.once('ready', this.addPeer.bind(this, pubKey))
@@ -101,11 +97,12 @@ Node.prototype.addPeer = function(pubKey) {
   if (this.getPeer(pubKey)) return
 
   var peer = this._peers[pubKey] = new Peer({
-    myIp: this.ip,
-    priv: this._key,
+    myKey: this._key,
     pub: pubKey,
     dht: this._dht,
-    socket: this._socket
+    socket: this._socket,
+    myIp: this.ip,
+    name: name
   })
 
   peer.on('data', function(data) {

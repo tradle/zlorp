@@ -4,7 +4,7 @@
 var split = require('split')
 var Node = require('../')
 var privKeys = require('./priv')
-var ec = require('../crypto').ec
+var ec = require('../lib/crypto').ec
 var myName = process.argv[2]
 if (!privKeys[myName]) throw new Error('no key found for ' + name)
 
