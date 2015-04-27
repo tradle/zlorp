@@ -15,7 +15,8 @@ for (var name in privKeys) {
 
 var node = new Node({
   dht: './dht.json',
-  priv: privKeys[name]
+  priv: privKeys[name],
+  port: process.argv[3] ? Number(process.argv[3]) : undefined
 })
 
 var others = Object.keys(privKeys).filter(function(n) {
