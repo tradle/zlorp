@@ -79,7 +79,6 @@ Peer.prototype._watchDHT = function() {
   this.emit('ready')
 
   function connect(addr) {
-    debug('connecting to', addr)
     self.connect(addr)
   }
 }
@@ -96,6 +95,8 @@ Peer.prototype.connect = function(addr) {
   var port = Number(hp[1])
 
   if (this.myIp === host) return
+
+  debug('connecting to', addr)
 
   var client = this.clients[addr] = new rudp.Client(this.socket, host, port)
   client.on('data', function(msg) {
