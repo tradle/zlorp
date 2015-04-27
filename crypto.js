@@ -53,7 +53,6 @@ function sharedKey(pub, priv) {
   pub = toPubKey(pub)
   priv = toPrivKey(priv)
   var key = priv.derive(pub)
-  debugger
   return crypto.createHash('sha256').update(key.toString()).digest()
 }
 

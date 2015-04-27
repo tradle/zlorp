@@ -8,6 +8,7 @@ var myCrypto = require('./crypto')
 var ec = myCrypto.ec
 var Peer = require('./peer')
 var DHT = require('./dht')
+var externalIp = require('./externalIp')
 // var Identity = require('midentity').Identity
 var EventEmitter = require('events').EventEmitter
 var DHT_KEY_TYPE = 'encrypt'
@@ -27,6 +28,12 @@ function Node(options) {
   //   type: 'ec',
   //   purpose: DHT_KEY_TYPE
   // })[0].pubKeyString()
+
+  externalIp(function(err, ip) {
+    self._ipDone = true
+    self.ip = ip
+    self._checkReady()
+  })
 
   this._loadDHT(options.dht)
   this._socket = dgram.createSocket('udp4')
@@ -56,7 +63,14 @@ Node.prototype._loadDHT = function(dht) {
 
   if (!this._dht) this._dht = new DHT()
 
-  this._dht.on('ready', this.emit.bind(this, 'ready'))
+  this._dht.once('ready', this._checkReady.bind(this))
+}
+
+Node.prototype._checkReady = function() {
+  if (!(this._dht.ready && this._ipDone)) return
+
+  this.ready = true
+  this.emit('ready')
 }
 
 Node.prototype.send = function(msg, toPubKey) {
@@ -82,9 +96,12 @@ Node.prototype.removePeer = function(pubKey) {
 Node.prototype.addPeer = function(pubKey) {
   var self = this
 
+  if (!this.ready) return this.once('ready', this.addPeer.bind(this, pubKey))
+
   if (this.getPeer(pubKey)) return
 
   this._peers[pubKey] = new Peer({
+    myIp: this.ip,
     priv: this._key,
     pub: pubKey,
     dht: this._dht,

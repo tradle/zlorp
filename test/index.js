@@ -22,7 +22,7 @@ var others = Object.keys(privKeys).filter(function(n) {
   return n !== name
 })
 
-node.on('ready', function() {
+node.once('ready', function() {
   others.forEach(function(name) {
     node.addPeer(pubKeys[name])
   })

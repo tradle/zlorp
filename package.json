@@ -27,8 +27,12 @@
     "elliptic": "^3.0.3",
     "midentity": "git://github.com/mvayngrib/identity#dev",
     "re-emitter": "^1.1.0",
+    "request": "^2.55.0",
     "rudp": "^1.0.0-alpha4",
     "split": "^0.3.3",
     "tape": "^4.0.0"
+  },
+  "optionalDependencies": {
+    "nat-upnp": "^0.2.11"
   }
 }
