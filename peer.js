@@ -34,7 +34,7 @@ function Peer(options) {
   if (this.dht.ready) this._watchDHT()
   else this.dht.once('ready', this._watchDHT.bind(this))
 
-  this.queue = []
+  this.queue = [START_MSG]
   this.clients = {}
   this.connected = {}
 }
@@ -123,12 +123,12 @@ Peer.prototype.connect = function(addr) {
     self.emit('data', msg)
   })
 
-  this.queue.unshift(START_MSG)
   this.queue.forEach(this.send, this)
 }
 
 Peer.prototype.send = function(msg) {
-  if (!Object.keys(this.clients).length) return this.queue.push(msg)
+  this.queue.push(msg)
+  if (!Object.keys(this.clients).length) return
 
   msg = this.encrypt(msg)
   for (var addr in this.clients) {
