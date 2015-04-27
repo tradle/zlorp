@@ -1,16 +1,15 @@
 
 var fs = require('fs')
 var dgram = require('dgram')
-var rudp = require('rudp')
-var inherits = require('util').inherits
-var crypto = require('crypto')
-var myCrypto = require('./crypto')
-var ec = myCrypto.ec
-var Peer = require('./peer')
-var DHT = require('./dht')
-var externalIp = require('./externalIp')
-// var Identity = require('midentity').Identity
 var EventEmitter = require('events').EventEmitter
+var inherits = require('util').inherits
+var rudp = require('rudp')
+var crypto = require('./lib/crypto')
+var ec = crypto.ec
+var Peer = require('./lib/peer')
+var DHT = require('./lib/dht')
+var externalIp = require('./lib/externalIp')
+// var Identity = require('midentity').Identity
 var DHT_KEY_TYPE = 'encrypt'
 var INTERVAL = 10000
 

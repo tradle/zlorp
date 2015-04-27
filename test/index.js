@@ -25,7 +25,7 @@ var others = Object.keys(privKeys).filter(function(n) {
 
 node.once('ready', function() {
   others.forEach(function(name) {
-    node.addPeer(pubKeys[name])
+    node.addPeer(pubKeys[name], name)
   })
 
   process.openStdin()
