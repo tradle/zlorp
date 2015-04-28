@@ -28,6 +28,7 @@
     "elliptic": "^3.0.3",
     "extend": "^2.0.1",
     "midentity": "git://github.com/mvayngrib/identity#dev",
+    "otr": "git://github.com/arlolra/otr",
     "re-emitter": "^1.1.0",
     "request": "^2.55.0",
     "rudp": "^1.0.0-alpha4",
