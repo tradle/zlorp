@@ -31,7 +31,7 @@
     "otr": "git://github.com/arlolra/otr",
     "re-emitter": "^1.1.0",
     "request": "^2.55.0",
-    "rudp": "^1.0.0-alpha4",
+    "rudp": "git://github.com/mvayngrib/node-rudp",
     "split": "^0.3.3",
     "tape": "^4.0.0"
   },
