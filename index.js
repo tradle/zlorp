@@ -183,15 +183,15 @@ Node.prototype._destroy = function(cb) {
     this._peers[id].destroy(finish)
   }, this)
 
-  this._dht.destroy(function() {
-    self._dht.removeAllListeners()
-    finish()
-  })
-
   if (this._dhtPath) {
     togo++
     fs.writeFile(this._dhtPath, JSON.stringify(this._dht.toArray()), finish)
   }
+
+  this._dht.destroy(function() {
+    self._dht.removeAllListeners()
+    finish()
+  })
 
   function finish() {
     if (--togo === 0) {
