@@ -43,9 +43,9 @@ function Node(options) {
   this.name = options.name
   this.key = options.key
   this.port = options.port
-  this.identifier = this.key.fingerprint()
-  this.infoHash = crypto.infoHash(this.identifier)
-  this.rInfoHash = crypto.rInfoHash(this.identifier)
+  this.fingerprint = this.key.fingerprint()
+  this.infoHash = crypto.infoHash(this.fingerprint)
+  this.rInfoHash = crypto.rInfoHash(this.fingerprint)
 
   if (options.externalIp) onExternalIp(null, options.externalIp)
   else externalIp(onExternalIp)
@@ -167,20 +167,20 @@ Node.prototype.connect = function(addr) {
   })
 
   peer.once('resolved', function(addr, pubKey) {
-    var identifier = pubKey.fingerprint()
-    debug('resolved', identifier, 'to', addr)
-    var infoHash = crypto.infoHash(identifier)
-    var rInfoHash = crypto.rInfoHash(identifier)
+    var fingerprint = pubKey.fingerprint()
+    debug('resolved', fingerprint, 'to', addr)
+    var infoHash = crypto.infoHash(fingerprint)
+    var rInfoHash = crypto.rInfoHash(fingerprint)
     self._stopAnnouncing(rInfoHash)
     self._stopLookingUp(infoHash)
     if (self.unresolved[infoHash]) {
       delete self.scouts[addr]
-      self.peers[identifier] = peer
-      self.emit('connect', identifier, addr)
-      var queue = self.queue[identifier]
+      self.peers[fingerprint] = peer
+      self.emit('connect', fingerprint, addr)
+      var queue = self.queue[fingerprint]
       if (queue) {
         queue.forEach(peer.send, peer)
-        delete self.queue[identifier]
+        delete self.queue[fingerprint]
       }
     }
     else {
@@ -196,7 +196,7 @@ Node.prototype.connect = function(addr) {
   })
 
   peer.once('destroy', function() {
-    self.removePeerWith('identifier', peer.identifier)
+    self.removePeerWith('fingerprint', peer.fingerprint)
   })
 
   peer.on('data', this.emit.bind(this, 'data'))
@@ -212,20 +212,20 @@ Node.prototype.ignoreStrangers = function() {
 /**
  * Send a message to a peer
  * @param  {String|Buffer} msg
- * @param  {String} identifier - peer, or peer's pubKey or fingerprint
+ * @param  {String} fingerprint - peer, or peer's pubKey or fingerprint
  */
-Node.prototype.send = function(msg, identifier) {
+Node.prototype.send = function(msg, fingerprint) {
   var peer
 
-  if (!this.ready) return this.once('ready', this.send.bind(this, msg, identifier))
+  if (!this.ready) return this.once('ready', this.send.bind(this, msg, fingerprint))
 
-  peer = this.getPeerWith('identifier', identifier)
+  peer = this.getPeerWith('fingerprint', fingerprint)
   if (!peer) {
     this.contact({
-      identifier: identifier
+      fingerprint: fingerprint
     })
 
-    var q = this.queue[identifier] = this.queue[identifier] || []
+    var q = this.queue[fingerprint] = this.queue[fingerprint] || []
     q.push(msg)
     return
   }
@@ -265,14 +265,14 @@ Node.prototype.removePeerWith = function(property, value) {
   }
 }
 
-Node.prototype.getPeer = function(identifier) {
-  return this.getPeerWith('identifier', identifier)
+Node.prototype.getPeer = function(fingerprint) {
+  return this.getPeerWith('fingerprint', fingerprint)
 }
 
 /**
  * add a peer
  * @param {Object} options
- * @param {String} options.identifier - peer's public key or fingerprint
+ * @param {String} options.fingerprint - peer's public key or fingerprint
  * @param {String} options.infoHash - peer's fingerprint infoHash
  * @param {String} options.name - optional, peer's name
  */
@@ -280,20 +280,20 @@ Node.prototype.contact = function(options) {
   var self = this
 
   assert(typeof options === 'object', 'Missing required property: options')
-  assert(options.identifier || options.infoHash, 'Provide identifier or infoHash')
+  assert(options.fingerprint || options.infoHash, 'Provide fingerprint or infoHash')
 
   if (!this.ready) return this.once('ready', this.contact.bind(this, options))
 
-  var identifier = options.identifier
-  var infoHash = options.infoHash || crypto.infoHash(identifier)
+  var fingerprint = options.fingerprint
+  var infoHash = options.infoHash || crypto.infoHash(fingerprint)
   if (this.unresolved[infoHash]) return
 
-  var rInfoHash = crypto.rInfoHash(identifier)
+  var rInfoHash = crypto.rInfoHash(fingerprint)
 
   if (this.getPeerWith('infoHash', infoHash)) return
 
   var potential = this.unresolved[infoHash] = extend({
-    identifier: identifier,
+    fingerprint: fingerprint,
     infoHash: infoHash,
     rInfoHash: rInfoHash,
     otr: null

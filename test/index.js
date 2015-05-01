@@ -50,7 +50,7 @@ test('connect', function(t) {
       nodes.forEach(function(b, j) {
         if (i !== j) a.contact({
           name: b.name,
-          identifier: b.identifier
+          fingerprint: b.fingerprint
         })
       })
     })
@@ -59,7 +59,7 @@ test('connect', function(t) {
     nodes.forEach(function(other) {
       if (other === sender) return
 
-      sender.send(MSG, other.identifier)
+      sender.send(MSG, other.fingerprint)
     })
   })
 })
@@ -71,14 +71,14 @@ test('detect interest from strangers', function(t) {
   makeConnectedNodes(2, function(nodes) {
     var a = nodes[0]
     var b = nodes[1]
-    a.contact({ identifier: b.identifier, name: b.name })
+    a.contact({ fingerprint: b.fingerprint, name: b.name })
 
     b.on('knockknock', function(addr) {
       b.connect(addr)
     })
 
     b.once('hello', function(pubKey, addr) {
-      t.equal(pubKey.fingerprint(), a.identifier)
+      t.equal(pubKey.fingerprint(), a.fingerprint)
       destroyNodes(nodes)
     })
   })

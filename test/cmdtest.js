@@ -4,7 +4,6 @@
 var split = require('split')
 var Node = require('../')
 var privKeys = require('./priv')
-var ec = require('../lib/crypto').ec
 var DSA = require('otr').DSA
 var myName = process.argv[2]
 if (!privKeys[myName]) throw new Error('no key found for ' + name)
@@ -13,20 +12,13 @@ var keyType
 var pubKeys = {}
 
 for (var name in privKeys) {
-  var keys = privKeys[name]
-  if (keys.dsa) {
-    keys.dsa = DSA.parsePrivate(keys.dsa)
-    pubKeys[name] = keys.dsa.fingerprint()
-  }
-  else if (keys.ec) {
-    keys.ec = ec.keyFromPrivate(keys.ec)
-    pubKeys[name] = keys.ec.getPublic(true, 'hex')
-  }
+  var key = privKeys[name] = DSA.parsePrivate(privKeys[name])
+  pubKeys[name] = key.fingerprint()
 }
 
 var node = new Node({
   dht: './dht.json',
-  keys: privKeys[myName],
+  key: privKeys[myName],
   port: process.argv[3] ? Number(process.argv[3]) : undefined
 })
 
@@ -35,7 +27,10 @@ var others = Object.keys(privKeys).filter(function(n) {
 })
 
 others.forEach(function(name) {
-  node.addPeer(pubKeys[name], name)
+  node.contact({
+    fingerprint: pubKeys[name],
+    name: name
+  })
 })
 
 process.openStdin()
