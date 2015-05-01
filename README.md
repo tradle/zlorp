@@ -10,7 +10,11 @@ Find peers on the internet via the BitTorrent DHT, knowing only their public key
 
 _inspired by [bluntly](https://github.com/danoctavian/bluntly)_
 
+## [Discovery schemes](./Discovery-Schemes.md)
+
 ## Usage
+
+### Basic
 
 ```js
 var DSA = require('otr').DSA
@@ -23,28 +27,67 @@ var tedFingerprint = '6127a5b679f880a4680479ecff9e770ffe4172ae'
 
 var me = new Zlorp({
   dht: './dht.json', // where to back up the dht
-  keys: {
-    // optional (no OTR, just regular encrypt/decrypt)
-    ec: require('elliptic').ec('ed25519').genKeyPair() 
-    // recommended (OTR)
-    dsa: myKey
-  },
+  key: myKey,
   port: 12345
 })
 
 // names are optional
-var bill = me.addPeer({
+me.contact({
   identifier: billFingerprint, 
   name: 'Bill S. Preston Esquire'
 })
 
-var ted = me.addPeer({
+me.contact({
   identifier: tedFingerprint, 
   name: 'Ted Theodore Logan'
 })
 
-me.send('excellent!', bill)
-// or bill.send('excellent!'), but then it looks like 
-// bill is sending the message, which is wrongity wrong
-me.send('party on, dude!', ted)
+me.send('excellent!', tedFingerprint)
+me.send('party on, dude!', billFingerprint)
+```
+
+### Strangers
+
+Because of the way discovery in the BitTorrent DHT works, you may learn information about another party in pieces, especially if you're being approached by strangers. Below is an example of how to handle the two stages of being approached by a stranger, with two events triggered by your zlorp instance:
+
+#### 'knockknock'
+
+You know their ip:port (addr), but not their DSA key public key or fingerprint, or even their DSA fingerprint's infoHash
+
+```js
+b.on('knockknock', function(addr) {
+  // we don't know who it is (their infoHash), just their address
+  // if you don't want to talk to them, ignore this event
+  // if you do:
+  b.connect(addr)
+})
+```
+
+#### 'hello'
+
+You now know everything you can know about the other party without access to their medical records: their ip:port and their DSA public key. You can still bail and not get into their tinted-windowed car.
+
+```js
+b.on('hello', function(pubKey, addr) {
+  // OTR with this party has passed the AKE successfully
+  // you now know their pubKey
+  // if you don't want to talk to them 
+  //   you can issue b.removePeerWith('pubKey', pubKey)
+})
+```
+
+#### Ignore Strangers
+
+```js
+zlorp.ignoreStrangers()
+```
+
+### Playing coy
+
+You can go into a sort of "away" mode. All this really means is that you stop screaming "HEY! LOOK AT ME!" into the DHT
+
+Keep in mind that "presence" information sticks around in the DHT for a while, so it may take time before your unavailability asserts itself
+
+```js
+zlorp.unavailable()
 ```
