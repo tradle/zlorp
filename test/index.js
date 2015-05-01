@@ -4,7 +4,6 @@ var test = require('tape')
 var DSA = require('otr').DSA
 var Zlorp = require('../')
 var DHT = require('../lib/dht')
-var crypto = require('../lib/crypto')
 var noop = function() {}
 var names = ['bill', 'ted']//, 'rufus', 'missy']//, 'abe lincoln', 'genghis khan', 'beethoven', 'socrates']
 var dsaKeys = require('./dsaKeys')

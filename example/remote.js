@@ -56,13 +56,13 @@ node.on('data', function(data, from) {
   }
 })
 
-process.on('exit', exitHandler.bind(null,{cleanup:true}));
+process.on('exit', exitHandler.bind(null, { cleanup:true }));
 
 //catches ctrl+c event
-process.on('SIGINT', exitHandler.bind(null, {exit:true}));
+process.on('SIGINT', exitHandler.bind(null, { exit:true }));
 
 //catches uncaught exceptions
-process.on('uncaughtException', exitHandler.bind(null, {exit:true}));
+process.on('uncaughtException', exitHandler.bind(null, { exit:true }));
 
 function exitHandler(options, err) {
   if (err) console.log(err.stack);

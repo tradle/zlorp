@@ -13,7 +13,6 @@ var utils = require('./lib/utils')
 var Peer = require('./lib/peer')
 var DHT = require('./lib/dht')
 var externalIp = require('./lib/externalIp')
-var DHT_KEY_TYPE = 'encrypt'
 var DEFAULT_INTERVAL = 10000
 var LOOKUP_INTERVAL = DEFAULT_INTERVAL
 var ANNOUNCE_INTERVAL = DEFAULT_INTERVAL
@@ -104,8 +103,8 @@ Node.prototype._loadDHT = function(dht) {
   this._dht.once('ready', this._checkReady.bind(this))
 }
 
-Node.prototype._addrIsSelf = function (addr) {
-  return this.address === addr || LOCAL_HOSTS[4].some(function (host) {
+Node.prototype._addrIsSelf = function(addr) {
+  return this.address === addr || LOCAL_HOSTS[4].some(function(host) {
     return host + ':' + this.port === addr
   }, this)
 }
