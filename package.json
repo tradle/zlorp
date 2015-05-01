@@ -25,7 +25,6 @@
     "bittorrent-dht": "git://github.com/tradle/bittorrent-dht#dev",
     "buffer-equal": "0.0.1",
     "debug": "^2.1.3",
-    "elliptic": "^3.0.3",
     "extend": "^2.0.1",
     "otr": "git://github.com/mvayngrib/otr",
     "re-emitter": "^1.1.0",

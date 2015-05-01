@@ -9,9 +9,7 @@ var os = require('os')
 var rudp = require('rudp')
 var debug = require('debug')('zlorp')
 var typeforce = require('typeforce')
-var crypto = require('./lib/crypto')
 var utils = require('./lib/utils')
-var ec = crypto.ec
 var Peer = require('./lib/peer')
 var DHT = require('./lib/dht')
 var externalIp = require('./lib/externalIp')
@@ -44,8 +42,8 @@ function Node(options) {
   this.key = options.key
   this.port = options.port
   this.fingerprint = this.key.fingerprint()
-  this.infoHash = crypto.infoHash(this.fingerprint)
-  this.rInfoHash = crypto.rInfoHash(this.fingerprint)
+  this.infoHash = utils.infoHash(this.fingerprint)
+  this.rInfoHash = utils.rInfoHash(this.fingerprint)
 
   if (options.externalIp) onExternalIp(null, options.externalIp)
   else externalIp(onExternalIp)
@@ -176,8 +174,8 @@ Node.prototype.connect = function(addr) {
   peer.once('resolved', function(addr, pubKey) {
     var fingerprint = pubKey.fingerprint()
     debug('resolved', fingerprint, 'to', addr)
-    var infoHash = crypto.infoHash(fingerprint)
-    var rInfoHash = crypto.rInfoHash(fingerprint)
+    var infoHash = utils.infoHash(fingerprint)
+    var rInfoHash = utils.rInfoHash(fingerprint)
     self._stopAnnouncing(rInfoHash)
     self._stopLookingUp(infoHash)
     if (self.unresolved[infoHash]) {
@@ -294,10 +292,10 @@ Node.prototype.contact = function(options) {
   if (!this.ready) return this.once('ready', this.contact.bind(this, options))
 
   var fingerprint = options.fingerprint
-  var infoHash = options.infoHash || crypto.infoHash(fingerprint)
+  var infoHash = options.infoHash || utils.infoHash(fingerprint)
   if (this.unresolved[infoHash]) return
 
-  var rInfoHash = crypto.rInfoHash(fingerprint)
+  var rInfoHash = utils.rInfoHash(fingerprint)
 
   if (this.getPeerWith('infoHash', infoHash)) return
 
