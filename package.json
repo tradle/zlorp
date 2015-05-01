@@ -1,5 +1,5 @@
 {
-  "name": "p2p",
+  "name": "zlorp",
   "version": "0.0.1",
   "description": "",
   "main": "index.js",
@@ -8,26 +8,25 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/mvayngrib/p2p"
+    "url": "https://github.com/mvayngrib/zlorp"
   },
   "keywords": [
-    "p2p",
+    "zlorp",
     "dht",
     "udp"
   ],
   "author": "Mark Vayngrib <mark.vayngrib@lablz.com> (http://github.com/mvayngrib)",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/mvayngrib/p2p/issues"
+    "url": "https://github.com/mvayngrib/zlorp/issues"
   },
-  "homepage": "https://github.com/mvayngrib/p2p",
+  "homepage": "https://github.com/mvayngrib/zlorp",
   "dependencies": {
     "bittorrent-dht": "git://github.com/tradle/bittorrent-dht#dev",
     "buffer-equal": "0.0.1",
     "debug": "^2.1.3",
     "elliptic": "^3.0.3",
     "extend": "^2.0.1",
-    "midentity": "git://github.com/mvayngrib/identity#dev",
     "otr": "git://github.com/mvayngrib/otr",
     "re-emitter": "^1.1.0",
     "request": "^2.55.0",
