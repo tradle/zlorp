@@ -9,11 +9,11 @@ var myName = process.argv[2]
 if (!privKeys[myName]) throw new Error('no key found for ' + name)
 
 var keyType
-var pubKeys = {}
+var fingerprints = {}
 
 for (var name in privKeys) {
   var key = privKeys[name] = DSA.parsePrivate(privKeys[name])
-  pubKeys[name] = key.fingerprint()
+  fingerprints[name] = key.fingerprint()
 }
 
 var node = new Node({
@@ -27,9 +27,16 @@ var others = Object.keys(privKeys).filter(function(n) {
 })
 
 others.forEach(function(name) {
+  var otherfinger = fingerprints[name]
   node.contact({
-    fingerprint: pubKeys[name],
+    fingerprint: otherfinger,
     name: name
+  })
+
+  node.on('connect', function(fingerprint) {
+    if (fingerprint === otherfinger) {
+      console.log('Tell ' + name + ' how you feel')
+    }
   })
 })
 
@@ -37,13 +44,13 @@ process.openStdin()
   .pipe(split())
   .on('data', function(line) {
     others.forEach(function(name) {
-      node.send(line, pubKeys[name])
+      node.send(line, fingerprints[name])
     })
   })
 
 node.on('data', function(data, from) {
-  for (var name in pubKeys) {
-    if (pubKeys[name] === from) {
+  for (var name in fingerprints) {
+    if (fingerprints[name] === from) {
       console.log(name + ': ' + data.toString())
     }
   }
@@ -60,7 +67,11 @@ process.on('uncaughtException', exitHandler.bind(null, {exit:true}));
 function exitHandler(options, err) {
   if (err) console.log(err.stack);
 
-  node.destroy(function() {
-    if (options.exit) process.exit(err ? 1 : 0)
-  })
+  node.destroy(exit)
+  var timeoutId = setTimeout(exit, 5000)
+
+  function exit() {
+    clearTimeout(timeoutId)
+    if (options.exit) process.exit()
+  }
 }

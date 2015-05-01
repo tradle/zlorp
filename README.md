@@ -91,3 +91,25 @@ Keep in mind that "presence" information sticks around in the DHT for a while, s
 ```js
 zlorp.unavailable()
 ```
+
+### Remote example
+
+```bash
+node example/remote.js [username] [port]
+```
+
+example/remote.js has a couple of keys for Bill and Ted, the most excellent friends, so you can try connecting to someone on another computer. Yes, you can be Ted since you asked nicely.
+
+You run:
+
+```bash
+node example/remote.js ted 12345
+```
+
+They run:
+
+```bash
+node example/remote.js ted 12345
+```
+
+When you're connected, you'll feel it

@@ -206,7 +206,9 @@ Node.prototype.connect = function(addr) {
     self.removePeerWith('fingerprint', peer.fingerprint)
   })
 
-  peer.on('data', this.emit.bind(this, 'data'))
+  peer.on('data', function(data) {
+    self.emit('data', data, peer.fingerprint)
+  })
 
   peer.connect()
 }
