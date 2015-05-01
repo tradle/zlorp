@@ -127,7 +127,14 @@ Node.prototype._checkReady = function() {
   function connect(addr, infoHash) {
     if (self._addrIsSelf(addr) || self.getPeerWith('address', addr)) return
 
-    if (infoHash === self.rInfoHash) self.emit('knockknock', addr)
+    if (infoHash === self.rInfoHash) {
+      if (self._available) {
+        self.connect(addr)
+      }
+      else {
+        self.emit('knock', addr)
+      }
+    }
 
     if (self.getUnresolvedBy('infoHash', infoHash) ||
        self.getUnresolvedBy('rInfoHash', infoHash)) {
@@ -351,11 +358,13 @@ Node.prototype._stopLookingUp = function(infoHash) {
 }
 
 Node.prototype.available = function() {
+  this._available = true
   this._announceForever(this.infoHash)
   return this
 }
 
 Node.prototype.unavailable = function() {
+  this._available = false
   this._stopAnnouncing(this.infoHash)
   return this
 }

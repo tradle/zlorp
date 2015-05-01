@@ -73,7 +73,7 @@ test('detect interest from strangers', function(t) {
     var b = nodes[1]
     a.contact({ fingerprint: b.fingerprint, name: b.name })
 
-    b.on('knockknock', function(addr) {
+    b.on('knock', function(addr) {
       b.connect(addr)
     })
 

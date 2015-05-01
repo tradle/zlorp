@@ -50,12 +50,12 @@ me.send('party on, dude!', billFingerprint)
 
 Because of the way discovery in the BitTorrent DHT works, you may learn information about another party in pieces, especially if you're being approached by strangers. Below is an example of how to handle the two stages of being approached by a stranger, with two events triggered by your zlorp instance:
 
-#### 'knockknock'
+#### 'knock'
 
 You know their ip:port (addr), but not their DSA key public key or fingerprint, or even their DSA fingerprint's infoHash
 
 ```js
-b.on('knockknock', function(addr) {
+b.on('knock', function(addr) {
   // we don't know who it is (their infoHash), just their address
   // if you don't want to talk to them, ignore this event
   // if you do:
