@@ -34,26 +34,24 @@ var others = Object.keys(privKeys).filter(function(n) {
   return n !== myName
 })
 
-node.once('ready', function() {
-  others.forEach(function(name) {
-    node.addPeer(pubKeys[name], name)
-  })
+others.forEach(function(name) {
+  node.addPeer(pubKeys[name], name)
+})
 
-  process.openStdin()
-    .pipe(split())
-    .on('data', function(line) {
-      others.forEach(function(name) {
-        node.send(line, pubKeys[name])
-      })
+process.openStdin()
+  .pipe(split())
+  .on('data', function(line) {
+    others.forEach(function(name) {
+      node.send(line, pubKeys[name])
     })
-
-  node.on('data', function(data, from) {
-    for (var name in pubKeys) {
-      if (pubKeys[name] === from) {
-        console.log(name + ': ' + data.toString())
-      }
-    }
   })
+
+node.on('data', function(data, from) {
+  for (var name in pubKeys) {
+    if (pubKeys[name] === from) {
+      console.log(name + ': ' + data.toString())
+    }
+  }
 })
 
 process.on('exit', exitHandler.bind(null,{cleanup:true}));

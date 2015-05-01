@@ -1,9 +1,10 @@
 
 var dgram = require('dgram')
 var test = require('tape')
+var DSA = require('otr').DSA
 var Zlorp = require('../')
 var DHT = require('../lib/dht')
-var DSA = require('otr').DSA
+var crypto = require('../lib/crypto')
 var noop = function() {}
 var names = ['bill', 'ted']//, 'rufus', 'missy']//, 'abe lincoln', 'genghis khan', 'beethoven', 'socrates']
 var dsaKeys = require('./dsaKeys')
@@ -11,27 +12,19 @@ var dsaKeys = require('./dsaKeys')
     return DSA.parsePrivate(key)
   })
 
-var basePort = Math.random() * 100000 | 0
-var createSocket = dgram.createSocket
-var socketId = 0
-dgram.createSocket = function() {
-  var s = createSocket.apply(this, arguments)
-  s.SOCKET_ID = socketId++
-  if (s.SOCKET_ID === 0 || s.SOCKET_ID === 5 || s.SOCKET_ID === 6) debugger
-  return s
-}
+var basePort = 20000
 
 test('destroy', function(t) {
+  t.timeoutAfter(5000)
   var node = new Zlorp({
     port: basePort++,
     dht: new DHT({ bootstrap: false }),
-    keys: {
-      dsa: dsaKeys[0]
-    }
+    key: dsaKeys[0]
   })
 
   node.on('ready', function() {
     node.destroy(function() {
+      t.pass('successfully self-destructed')
       t.end()
     })
   })
@@ -41,38 +34,23 @@ test('connect', function(t) {
   var n = Math.min(names.length, dsaKeys.length)
 
   t.plan(n - 1)
-  makeConnectedDHTs(n, function(dhts) {
-    var nodes = dhts.map(function(key, i) {
-      return new Zlorp({
-        port: basePort++,
-        dht: dhts[i],
-        keys: {
-          dsa: dsaKeys[i]
-        }
-      })
-    })
-
-    var MSG = 'blah!'
+  makeConnectedNodes(n, function(nodes) {
+    var MSG = 'excellent!'
     var togo = n - 1
     nodes.forEach(function(a, i) {
+      a.available()
       a.once('data', function(msg) {
         msg = msg.toString('binary')
-        console.log(names[i], 'got message:', msg)
-        t.equals(msg, MSG)
+        t.equals(msg, MSG, 'connected, sent/received encrypted data')
         if (--togo > 0) return
 
-        nodes.forEach(function(node) { node.destroy() })
-        var intervalId = setInterval(function() {
-          var active = process._getActiveHandles()
-          if (active.length === 1) clearInterval(intervalId)
-          else console.log('ACTIVE', active.length, active)
-        }, 2000)
+        destroyNodes(nodes)
       })
 
       nodes.forEach(function(b, j) {
-        if (i !== j) a.addPeer({
-          name: names[j],
-          identifier: b.identifier()
+        if (i !== j) a.contact({
+          name: b.name,
+          identifier: b.identifier
         })
       })
     })
@@ -81,7 +59,27 @@ test('connect', function(t) {
     nodes.forEach(function(other) {
       if (other === sender) return
 
-      sender.send(MSG, other.identifier())
+      sender.send(MSG, other.identifier)
+    })
+  })
+})
+
+test('detect interest from strangers', function(t) {
+  var n = Math.min(names.length, dsaKeys.length)
+
+  t.plan(1)
+  makeConnectedNodes(2, function(nodes) {
+    var a = nodes[0]
+    var b = nodes[1]
+    a.contact({ identifier: b.identifier, name: b.name })
+
+    b.on('knockknock', function(addr) {
+      b.connect(addr)
+    })
+
+    b.once('hello', function(pubKey, addr) {
+      t.equal(pubKey.fingerprint(), a.identifier)
+      destroyNodes(nodes)
     })
   })
 })
@@ -102,6 +100,25 @@ function makeConnectedDHTs(n, cb) {
   }
 
   return dhts
+}
+
+function makeConnectedNodes(n, cb) {
+  makeConnectedDHTs(n, function(dhts) {
+    var nodes = dhts.map(function(key, i) {
+      return new Zlorp({
+        name: names[i],
+        port: basePort++,
+        dht: dhts[i],
+        key: dsaKeys[i]
+      })
+    })
+
+    cb(nodes)
+  })
+}
+
+function destroyNodes(nodes) {
+  nodes.forEach(function(node) { node.destroy() })
 }
 
 function makeFriends(dhts) {
