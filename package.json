@@ -21,6 +21,9 @@
     "url": "https://github.com/mvayngrib/zlorp/issues"
   },
   "homepage": "https://github.com/mvayngrib/zlorp",
+  "browser": {
+    "nat-upnp": false
+  },
   "dependencies": {
     "bittorrent-dht": "git://github.com/tradle/bittorrent-dht",
     "buffer-equal": "0.0.1",
