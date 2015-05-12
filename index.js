@@ -6,7 +6,6 @@ var EventEmitter = require('events').EventEmitter
 var inherits = require('util').inherits
 var extend = require('extend')
 var os = require('os')
-var rudp = require('rudp')
 var debug = require('debug')('zlorp')
 var typeforce = require('typeforce')
 var utils = require('./lib/utils')
