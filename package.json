@@ -22,7 +22,7 @@
   },
   "homepage": "https://github.com/mvayngrib/zlorp",
   "dependencies": {
-    "bittorrent-dht": "git://github.com/tradle/bittorrent-dht#dev",
+    "bittorrent-dht": "git://github.com/tradle/bittorrent-dht",
     "buffer-equal": "0.0.1",
     "debug": "^2.1.3",
     "extend": "^2.0.1",

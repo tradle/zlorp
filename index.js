@@ -12,6 +12,7 @@ var typeforce = require('typeforce')
 var utils = require('./lib/utils')
 var Peer = require('./lib/peer')
 var DHT = require('./lib/dht')
+Node.DHT = DHT // export DHT to allow override
 var externalIp = require('./lib/externalIp')
 var DEFAULT_INTERVAL = 10000
 var LOOKUP_INTERVAL = DEFAULT_INTERVAL
@@ -87,7 +88,7 @@ Node.prototype._loadDHT = function(dht) {
     if (typeof dht === 'string') {
       this._dhtPath = dht
       if (fs.existsSync(dht)) {
-        this._dht = new DHT({
+        this._dht = new Node.DHT({
           bootstrap: require(dht)
         })
       }
@@ -97,7 +98,7 @@ Node.prototype._loadDHT = function(dht) {
     }
   }
 
-  if (!this._dht) this._dht = new DHT()
+  if (!this._dht) this._dht = new Node.DHT()
 
   this._dht.setMaxListeners(500)
   this._dht.once('ready', this._checkReady.bind(this))
