@@ -1,5 +1,5 @@
 
-var fs = require('fs')
+var levelup = require('levelup')
 var dgram = require('dgram')
 var assert = require('assert')
 var EventEmitter = require('events').EventEmitter
@@ -11,9 +11,11 @@ var debug = require('debug')('zlorp')
 var typeforce = require('typeforce')
 var utils = require('./lib/utils')
 var Peer = require('./lib/peer')
-var DHT = require('./lib/dht')
+var DHT = require('bittorrent-dht')
 Node.DHT = DHT // export DHT to allow override
 var externalIp = require('./lib/externalIp')
+var DHT_KEY = 'dht'
+var DB_PATH = 'zlorp-db'
 var DEFAULT_INTERVAL = 10000
 var LOOKUP_INTERVAL = DEFAULT_INTERVAL
 var ANNOUNCE_INTERVAL = DEFAULT_INTERVAL
@@ -47,6 +49,10 @@ function Node(options) {
 
   if (options.externalIp) onExternalIp(null, options.externalIp)
   else externalIp(onExternalIp)
+
+  if (options.leveldown) {
+    this._db = levelup(DB_PATH, { db: options.leveldown })
+  }
 
   this._loadDHT(options.dht)
   this.socket = dgram.createSocket('udp4')
@@ -82,26 +88,35 @@ inherits(Node, EventEmitter)
 utils.destroyify(Node)
 
 Node.prototype._loadDHT = function(dht) {
+  var self = this
+
   if (this._dht) throw new Error('already hooked up to DHT')
 
-  if (dht) {
-    if (typeof dht === 'string') {
-      this._dhtPath = dht
-      if (fs.existsSync(dht)) {
-        this._dht = new Node.DHT({
-          bootstrap: require(dht)
+  if (dht || !this._db) {
+    this._dht = dht
+    configure()
+  }
+  else if (this._db) {
+    this._db.get(DHT_KEY, function(err, result) {
+      if (err || !result) {
+        self._dht = new Node.DHT({
+          bootstrap: result
         })
       }
-    }
-    else {
-      this._dht = dht
-    }
+
+      configure()
+    })
   }
 
-  if (!this._dht) this._dht = new Node.DHT()
+  function configure() {
+    if (!self._dht) self._dht = new Node.DHT()
 
-  this._dht.setMaxListeners(500)
-  this._dht.once('ready', this._checkReady.bind(this))
+    self._dht.setMaxListeners(500)
+    self._dht.once('ready', self._checkReady.bind(self))
+    self._dht.on('peer', function(addr, infoHash, from) {
+      self._dht.emit('peer:' + infoHash, addr, from)
+    })
+  }
 }
 
 Node.prototype._addrIsSelf = function(addr) {
@@ -381,10 +396,12 @@ Node.prototype._destroy = function(cb) {
     clearTimeout(this._lookupTimeouts[key])
   }
 
-  if (this._dhtPath) {
+  if (this._db) {
     togo++
-    self._debug('saving dht')
-    fs.writeFile(this._dhtPath, JSON.stringify(this._dht.toArray()), finish)
+    this._debug('saving dht')
+    this._db.put(DHT_KEY, this._dht.toArray(), function() {
+      self._db.close(finish)
+    })
   }
 
   this._dht.destroy(function() {

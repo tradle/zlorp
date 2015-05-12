@@ -1,9 +1,10 @@
 
 var dgram = require('dgram')
+var leveldown = require('leveldown')
 var test = require('tape')
 var DSA = require('otr').DSA
 var Zlorp = require('../')
-var DHT = require('../lib/dht')
+var DHT = require('bittorrent-dht')
 var noop = function() {}
 var names = ['bill', 'ted']//, 'rufus', 'missy']//, 'abe lincoln', 'genghis khan', 'beethoven', 'socrates']
 var dsaKeys = require('./dsaKeys')
@@ -16,6 +17,7 @@ var basePort = 20000
 test('destroy', function(t) {
   t.timeoutAfter(5000)
   var node = new Zlorp({
+    leveldown: leveldown,
     port: basePort++,
     dht: new DHT({ bootstrap: false }),
     key: dsaKeys[0]
