@@ -127,7 +127,7 @@ Node.prototype._addrIsSelf = function(addr) {
 Node.prototype._checkReady = function() {
   var self = this
 
-  if (!(this._socketReady && this._dht.ready && this._ipDone)) return
+  if (!(this._socketReady && (this._dht && this._dht.ready) && this._ipDone)) return
 
   this._dht.on('announce', connect)
   this._dht.on('peer', connect)
