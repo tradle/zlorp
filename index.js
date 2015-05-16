@@ -17,7 +17,7 @@ Node.OTR = OTR
 var externalIp = require('./lib/externalIp')
 var DHT_KEY = 'dht'
 var DB_PATH = 'zlorp-db'
-var DEFAULT_INTERVAL = 10000
+var DEFAULT_INTERVAL = 300000
 var LOOKUP_INTERVAL = DEFAULT_INTERVAL
 var ANNOUNCE_INTERVAL = DEFAULT_INTERVAL
 var KEEP_ALIVE_INTERVAL = DEFAULT_INTERVAL
@@ -177,7 +177,7 @@ Node.prototype.connect = function(addr, expectedFingerprint) {
   var hostPort = addr.split(':')
   if (hostPort.length !== 2) throw new Error('invalid address provided')
 
-  if (!this.ready) return this.once('ready', this.connect.bind(this, addr))
+  if (!this.ready) return this.once('ready', this.connect.bind(this, addr, expectedFingerprint))
 
   if (this.blacklist[addr] || this.getPeerWith('address', addr)) return
 
@@ -316,11 +316,6 @@ Node.prototype.contact = function(options) {
   if (!this.ready) return this.once('ready', this.contact.bind(this, options))
 
   var fingerprint = options.fingerprint
-  if (options.address) {
-    this.connect(options.address, fingerprint)
-    return
-  }
-
   var infoHash = options.infoHash || utils.infoHash(fingerprint)
   if (this.unresolved[infoHash]) return
 
@@ -340,6 +335,8 @@ Node.prototype.contact = function(options) {
     self._stopLookingUp(infoHash)
     self._announceForever(rInfoHash)
   })
+
+  if (options.address) this.connect(options.address, fingerprint)
 }
 
 Node.prototype._announceForever = function(infoHash) {
