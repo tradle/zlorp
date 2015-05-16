@@ -11,6 +11,9 @@ var typeforce = require('typeforce')
 var utils = require('./lib/utils')
 var Peer = require('./lib/peer')
 var DHT = require('bittorrent-dht')
+var OTR = require('otr')
+Node.DHT = DHT
+Node.OTR = OTR
 var externalIp = require('./lib/externalIp')
 var DHT_KEY = 'dht'
 var DB_PATH = 'zlorp-db'
@@ -54,6 +57,7 @@ function Node(options) {
 
   this._loadDHT(options.dht)
   this.socket = dgram.createSocket('udp4')
+  this.socket.setMaxListeners(0)
   this.socket.bind(this.port, function() {
     self._socketReady = true
     self._checkReady()
@@ -97,7 +101,7 @@ Node.prototype._loadDHT = function(dht) {
   else if (this._db) {
     this._db.get(DHT_KEY, function(err, result) {
       if (err || !result) {
-        self._dht = new Node.DHT({
+        self._dht = new DHT({
           bootstrap: result
         })
       }
@@ -107,7 +111,7 @@ Node.prototype._loadDHT = function(dht) {
   }
 
   function configure() {
-    if (!self._dht) self._dht = new Node.DHT()
+    if (!self._dht) self._dht = new DHT()
 
     self._dht.setMaxListeners(500)
     self._dht.once('ready', self._checkReady.bind(self))
@@ -433,5 +437,3 @@ Node.prototype._destroy = function(cb) {
 }
 
 module.exports = Node
-exports.DHT = DHT
-exports.OTR = require('otr')
