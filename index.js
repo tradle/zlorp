@@ -11,7 +11,6 @@ var typeforce = require('typeforce')
 var utils = require('./lib/utils')
 var Peer = require('./lib/peer')
 var DHT = require('bittorrent-dht')
-Node.DHT = DHT // export DHT to allow override
 var externalIp = require('./lib/externalIp')
 var DHT_KEY = 'dht'
 var DB_PATH = 'zlorp-db'
@@ -434,3 +433,5 @@ Node.prototype._destroy = function(cb) {
 }
 
 module.exports = Node
+exports.DHT = DHT
+exports.OTR = require('otr')
