@@ -169,7 +169,7 @@ Node.prototype.blacklist = function(addr) {
   this.blacklist[addr] = true
 }
 
-Node.prototype.connect = function(addr) {
+Node.prototype.connect = function(addr, expectedFingerprint) {
   var self = this
 
   if (this.address === addr) throw new Error('cannot connect to self')
@@ -190,6 +190,12 @@ Node.prototype.connect = function(addr) {
 
   peer.once('resolved', function(addr, pubKey) {
     var fingerprint = pubKey.fingerprint()
+    if (expectedFingerprint && fingerprint !== expectedFingerprint) {
+      self._debug('peer at ' + addr + ' doesn\'t have expected fingerprint, destroying them')
+      peer.destroy()
+      return
+    }
+
     debug('resolved', fingerprint, 'to', addr)
     var infoHash = utils.infoHash(fingerprint)
     var rInfoHash = utils.rInfoHash(fingerprint)
@@ -298,6 +304,7 @@ Node.prototype.getPeer = function(fingerprint) {
  * @param {Object} options
  * @param {String} options.fingerprint - peer's public key or fingerprint
  * @param {String} options.infoHash - peer's fingerprint infoHash
+ * @param {String} options.address - peer's ip:port
  * @param {String} options.name - optional, peer's name
  */
 Node.prototype.contact = function(options) {
@@ -309,6 +316,11 @@ Node.prototype.contact = function(options) {
   if (!this.ready) return this.once('ready', this.contact.bind(this, options))
 
   var fingerprint = options.fingerprint
+  if (options.address) {
+    this.connect(options.address, fingerprint)
+    return
+  }
+
   var infoHash = options.infoHash || utils.infoHash(fingerprint)
   if (this.unresolved[infoHash]) return
 

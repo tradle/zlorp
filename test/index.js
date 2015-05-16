@@ -65,6 +65,56 @@ test('connect', function(t) {
   })
 })
 
+test('connect knowing ip:port', function(t) {
+  var n = Math.min(names.length, dsaKeys.length)
+
+  t.plan(n - 1)
+  var nodes = []
+  for (var i = 0; i < n; i++) {
+    nodes.push(new Zlorp({
+      name: names[i],
+      port: basePort++,
+      dht: new DHT({ bootstrap: false }),
+      key: dsaKeys[i]
+    }))
+  }
+
+  var MSG = 'excellent!'
+  var togo = n - 1
+  var sender = nodes[0]
+  nodes.forEach(function(a, i) {
+    a.available()
+    a.once('data', function(msg) {
+      msg = msg.toString('binary')
+      t.equals(msg, MSG, 'connected, sent/received encrypted data')
+      if (--togo > 0) return
+
+      destroyNodes(nodes)
+    })
+
+    nodes.forEach(function(b, j) {
+      if (i === j) return
+
+      b.once('ready', function() {
+        a.contact({
+          name: b.name,
+          fingerprint: b.fingerprint,
+          address: '127.0.0.1:' + b.port
+        })
+
+        // if (sender !== b) sender.send(MSG, b.fingerprint)
+      })
+    })
+  })
+
+  var sender = nodes[0]
+  nodes.forEach(function(other) {
+    if (other === sender) return
+
+    sender.send(MSG, other.fingerprint)
+  })
+})
+
 test('detect interest from strangers', function(t) {
   var n = Math.min(names.length, dsaKeys.length)
 
