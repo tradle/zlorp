@@ -14,6 +14,7 @@ var DHT = require('bittorrent-dht')
 var OTR = require('otr')
 Node.DHT = DHT
 Node.OTR = OTR
+Node.DSA = OTR.DSA
 var externalIp = require('./lib/externalIp')
 var DHT_KEY = 'dht'
 var DB_PATH = 'zlorp-db'
