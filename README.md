@@ -113,3 +113,7 @@ node example/remote.js ted 12345
 ```
 
 When you're connected, you'll feel it
+
+## Todo
+
+- Persistent instance tags for OTR
