@@ -95,6 +95,8 @@ Node.prototype._loadDHT = function(dht) {
 
   if (this._dht) throw new Error('already hooked up to DHT')
 
+  if (dht && (!dht instanceof DHT)) throw new Error('dht must be a DHT instance')
+
   if (dht || !this._db) {
     this._dht = dht
     configure()

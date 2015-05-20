@@ -17,7 +17,6 @@ for (var name in privKeys) {
 }
 
 var node = new Node({
-  dht: './dht.json',
   key: privKeys[myName],
   port: process.argv[3] ? Number(process.argv[3]) : undefined
 })
