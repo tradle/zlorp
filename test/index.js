@@ -1,4 +1,5 @@
 
+require('sock-jack')
 var dgram = require('dgram')
 var leveldown = require('leveldown')
 var test = require('tape')
@@ -6,19 +7,18 @@ var DSA = require('otr').DSA
 var Zlorp = require('../')
 var DHT = require('bittorrent-dht')
 var noop = function() {}
+var basePort = 20000
 var names = ['bill', 'ted']//, 'rufus', 'missy']//, 'abe lincoln', 'genghis khan', 'beethoven', 'socrates']
+Zlorp.LOOKUP_INTERVAL = Zlorp.ANNOUNCE_INTERVAL = 100
 var dsaKeys = require('./dsaKeys')
   .map(function(key) {
     return DSA.parsePrivate(key)
   })
 
-var basePort = 20000
-
 test('destroy', function(t) {
   t.timeoutAfter(5000)
   var node = new Zlorp({
     leveldown: leveldown,
-    port: basePort++,
     dht: new DHT({ bootstrap: false }),
     key: dsaKeys[0]
   })
@@ -89,20 +89,17 @@ test('connect knowing ip:port', function(t) {
       t.equals(msg, MSG, 'connected, sent/received encrypted data')
       if (--togo > 0) return
 
+      // console.log('destroying')
       destroyNodes(nodes)
     })
 
     nodes.forEach(function(b, j) {
       if (i === j) return
 
-      b.once('ready', function() {
-        a.contact({
-          name: b.name,
-          fingerprint: b.fingerprint,
-          address: '127.0.0.1:' + b.port
-        })
-
-        // if (sender !== b) sender.send(MSG, b.fingerprint)
+      a.contact({
+        name: b.name,
+        fingerprint: b.fingerprint,
+        address: '127.0.0.1:' + b.port
       })
     })
   })
@@ -139,7 +136,7 @@ function makeConnectedDHTs(n, cb) {
   var dhts = []
   for (var i = 0; i < n; i++) {
     var dht = new DHT({ bootstrap: false })
-    dht.listen(finish)
+    dht.listen(basePort++, finish)
     dhts.push(dht)
   }
 
@@ -155,11 +152,11 @@ function makeConnectedDHTs(n, cb) {
 
 function makeConnectedNodes(n, cb) {
   makeConnectedDHTs(n, function(dhts) {
-    var nodes = dhts.map(function(key, i) {
+    var nodes = dhts.map(function(dht, i) {
       return new Zlorp({
         name: names[i],
-        port: basePort++,
-        dht: dhts[i],
+        port: dht.address().port,
+        dht: dht,
         key: dsaKeys[i]
       })
     })

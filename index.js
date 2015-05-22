@@ -1,4 +1,5 @@
 
+require('sock-jack')
 var levelup = require('levelup')
 var dgram = require('dgram')
 var assert = require('assert')
@@ -15,13 +16,11 @@ var OTR = require('otr')
 Node.DHT = DHT
 Node.OTR = OTR
 Node.DSA = OTR.DSA
+Node.LOOKUP_INTERVAL = 30000
+Node.ANNOUNCE_INTERVAL = 3000000
 var externalIp = require('./lib/externalIp')
 var DHT_KEY = 'dht'
 var DB_PATH = 'zlorp-db'
-var DEFAULT_INTERVAL = 300000
-var LOOKUP_INTERVAL = DEFAULT_INTERVAL
-var ANNOUNCE_INTERVAL = DEFAULT_INTERVAL
-var KEEP_ALIVE_INTERVAL = DEFAULT_INTERVAL
 var LOCAL_HOSTS = { 4: [], 6: [] }
 var interfaces = os.networkInterfaces()
 for (var i in interfaces) {
@@ -38,7 +37,6 @@ function Node(options) {
   options = options || {}
 
   typeforce({
-    port: 'Number',
     key: 'Object'
   }, options)
 
@@ -56,14 +54,10 @@ function Node(options) {
     this._db = levelup(DB_PATH, { db: options.leveldown })
   }
 
-  this._loadDHT(options.dht)
   this.socket = dgram.createSocket('udp4')
   this.socket.setMaxListeners(0)
-  this.socket.bind(this.port, function() {
-    self._socketReady = true
-    self._checkReady()
-  })
 
+  this._loadDHT(options.dht)
   this.unresolved = {}
   this.peers = {}
   this.scouts = {}
@@ -72,6 +66,7 @@ function Node(options) {
 
   this._lookupTimeouts = {}
   this._announceTimeouts = {}
+
   if (options.available !== false) {
     this.once('ready', this.available.bind(this))
   }
@@ -116,10 +111,40 @@ Node.prototype._loadDHT = function(dht) {
   function configure() {
     if (!self._dht) self._dht = new DHT()
 
+    try {
+      self._dht.listen(self.port)
+    } catch (err) {
+    }
+
+    self._dht.socket.filterMessages(function(msg, rinfo) {
+      return /^d1:.?d2:id20:/.test(msg)
+    })
+
     self._dht.setMaxListeners(500)
     self._dht.once('ready', self._checkReady.bind(self))
     self._dht.on('peer', function(addr, infoHash, from) {
       self._dht.emit('peer:' + infoHash, addr, from)
+    })
+
+    checkPort()
+  }
+
+  function checkPort() {
+    if (!self._dht.listening) return self._dht.once('listening', checkPort)
+
+    var dhtPort = self._dht.address().port
+    if (self.port && dhtPort !== self.port) {
+      throw new Error('node must share DHT\'s port')
+    }
+    else self.port = dhtPort
+
+    onPort()
+  }
+
+  function onPort() {
+    self.socket.bind(self.port, function() {
+      self._socketReady = true
+      self._checkReady()
     })
   }
 }
@@ -316,7 +341,7 @@ Node.prototype.contact = function(options) {
   assert(typeof options === 'object', 'Missing required property: options')
   assert(options.fingerprint || options.infoHash, 'Provide fingerprint or infoHash')
 
-  if (!this.ready) return this.once('ready', this.contact.bind(this, options))
+  // if (!this.ready) return this.once('ready', this.contact.bind(this, options))
 
   var fingerprint = options.fingerprint
   var infoHash = options.infoHash || utils.infoHash(fingerprint)
@@ -329,8 +354,7 @@ Node.prototype.contact = function(options) {
   var potential = this.unresolved[infoHash] = extend({
     fingerprint: fingerprint,
     infoHash: infoHash,
-    rInfoHash: rInfoHash,
-    otr: null
+    rInfoHash: rInfoHash
   }, options)
 
   this._lookupForever(infoHash)
@@ -340,39 +364,72 @@ Node.prototype.contact = function(options) {
   })
 
   if (options.address) this.connect(options.address, fingerprint)
+
+  this._reemitExistingPeers()
+  this._relookup()
+  // this._reannounce()
+}
+
+Node.prototype._relookup = function() {
+  for (var infoHash in this._lookupTimeouts) {
+    this._lookupForever(infoHash)
+  }
+}
+
+Node.prototype._reannounce = function() {
+  for (var infoHash in this._announceTimeouts) {
+    this._announceForever(infoHash)
+  }
+}
+
+Node.prototype._reemitExistingPeers = function() {
+  // re-emit existing peers
+  var peers = this._dht.peers
+  for (var infoHash in peers) {
+    var addrs = peers[infoHash].index
+    for (var addr in addrs) {
+      this._dht.emit('peer', addr, infoHash)
+    }
+  }
 }
 
 Node.prototype._announceForever = function(infoHash) {
   var self = this
 
-  if (this._announceTimeouts[infoHash]) return
+  clearTimeout(this._announceTimeouts[infoHash])
 
   announce()
 
   function announce() {
-    self._dht.announce(infoHash, self.port, loop)
+    // self._dht.announce(infoHash, self.port, loop)
+    // use implied_port option by not specifying port
+    if (self._destroying) return
+
+    self._dht.announce(infoHash, loop)
   }
 
   function loop() {
     clearTimeout(self._announceTimeouts[self.infoHash])
-    self._announceTimeouts[self.infoHash] = setTimeout(announce, ANNOUNCE_INTERVAL)
+    self._announceTimeouts[self.infoHash] = setTimeout(announce, Node.ANNOUNCE_INTERVAL)
   }
 }
 
 Node.prototype._lookupForever = function(infoHash) {
   var self = this
 
-  if (this._lookupTimeouts[infoHash]) return
+  clearTimeout(this._lookupTimeouts[infoHash])
 
   lookup()
 
   function lookup() {
-    self._dht.lookup(infoHash, self.port, loop)
+    if (self._destroying) return
+    if (!self._dht.ready) self._dht.once('ready', lookup)
+    else self._dht.lookup(infoHash, loop)
   }
 
   function loop() {
     clearTimeout(self._lookupTimeouts[infoHash])
-    self._lookupTimeouts[infoHash] = setTimeout(lookup, ANNOUNCE_INTERVAL)
+    self._lookupTimeouts[infoHash] = setTimeout(lookup, Node.LOOKUP_INTERVAL)
   }
 }
 
@@ -435,7 +492,6 @@ Node.prototype._destroy = function(cb) {
   }
 
   function finish() {
-    // self._debug('togo', togo)
     if (--togo === 0) {
       try {
         self.socket.close()
