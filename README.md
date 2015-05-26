@@ -117,3 +117,5 @@ When you're connected, you'll feel it
 ## Todo
 
 - Persistent instance tags for OTR
+- Improve reconnect
+- replace rudp with utp
