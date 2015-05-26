@@ -1,21 +1,18 @@
-
 require('sock-jack')
-var dgram = require('dgram')
 var leveldown = require('leveldown')
 var test = require('tape')
 var DSA = require('otr').DSA
 var Zlorp = require('../')
 var DHT = require('bittorrent-dht')
-var noop = function() {}
 var basePort = 20000
-var names = ['bill', 'ted']//, 'rufus', 'missy']//, 'abe lincoln', 'genghis khan', 'beethoven', 'socrates']
+var names = ['bill', 'ted']// , 'rufus', 'missy']//, 'abe lincoln', 'genghis khan', 'beethoven', 'socrates']
 Zlorp.LOOKUP_INTERVAL = Zlorp.ANNOUNCE_INTERVAL = 100
 var dsaKeys = require('./dsaKeys')
-  .map(function(key) {
+  .map(function (key) {
     return DSA.parsePrivate(key)
   })
 
-test('destroy', function(t) {
+test('destroy', function (t) {
   t.timeoutAfter(5000)
   var node = new Zlorp({
     leveldown: leveldown,
@@ -23,24 +20,24 @@ test('destroy', function(t) {
     key: dsaKeys[0]
   })
 
-  node.on('ready', function() {
-    node.destroy(function() {
+  node.on('ready', function () {
+    node.destroy(function () {
       t.pass('successfully self-destructed')
       t.end()
     })
   })
 })
 
-test('connect', function(t) {
+test('connect', function (t) {
   var n = Math.min(names.length, dsaKeys.length)
 
   t.plan(n - 1)
-  makeConnectedNodes(n, function(nodes) {
+  makeConnectedNodes(n, function (nodes) {
     var MSG = 'excellent!'
     var togo = n - 1
-    nodes.forEach(function(a, i) {
+    nodes.forEach(function (a, i) {
       a.available()
-      a.once('data', function(msg) {
+      a.once('data', function (msg) {
         msg = msg.toString('binary')
         t.equals(msg, MSG, 'connected, sent/received encrypted data')
         if (--togo > 0) return
@@ -48,16 +45,18 @@ test('connect', function(t) {
         destroyNodes(nodes)
       })
 
-      nodes.forEach(function(b, j) {
-        if (i !== j) a.contact({
-          name: b.name,
-          fingerprint: b.fingerprint
-        })
+      nodes.forEach(function (b, j) {
+        if (i !== j) {
+          a.contact({
+            name: b.name,
+            fingerprint: b.fingerprint
+          })
+        }
       })
     })
 
     var sender = nodes[0]
-    nodes.forEach(function(other) {
+    nodes.forEach(function (other) {
       if (other === sender) return
 
       sender.send(MSG, other.fingerprint)
@@ -65,7 +64,7 @@ test('connect', function(t) {
   })
 })
 
-test('connect knowing ip:port', function(t) {
+test('connect knowing ip:port', function (t) {
   var n = Math.min(names.length, dsaKeys.length)
 
   t.plan(n - 1)
@@ -82,9 +81,9 @@ test('connect knowing ip:port', function(t) {
   var MSG = 'excellent!'
   var togo = n - 1
   var sender = nodes[0]
-  nodes.forEach(function(a, i) {
+  nodes.forEach(function (a, i) {
     a.available()
-    a.once('data', function(msg) {
+    a.once('data', function (msg) {
       msg = msg.toString('binary')
       t.equals(msg, MSG, 'connected, sent/received encrypted data')
       if (--togo > 0) return
@@ -93,7 +92,7 @@ test('connect knowing ip:port', function(t) {
       destroyNodes(nodes)
     })
 
-    nodes.forEach(function(b, j) {
+    nodes.forEach(function (b, j) {
       if (i === j) return
 
       a.contact({
@@ -104,35 +103,32 @@ test('connect knowing ip:port', function(t) {
     })
   })
 
-  var sender = nodes[0]
-  nodes.forEach(function(other) {
+  nodes.forEach(function (other) {
     if (other === sender) return
 
     sender.send(MSG, other.fingerprint)
   })
 })
 
-test('detect interest from strangers', function(t) {
-  var n = Math.min(names.length, dsaKeys.length)
-
+test('detect interest from strangers', function (t) {
   t.plan(1)
-  makeConnectedNodes(2, function(nodes) {
+  makeConnectedNodes(2, function (nodes) {
     var a = nodes[0]
     var b = nodes[1]
     a.contact({ fingerprint: b.fingerprint, name: b.name })
 
-    b.on('knock', function(addr) {
+    b.on('knock', function (addr) {
       b.connect(addr)
     })
 
-    b.once('hello', function(pubKey, addr) {
+    b.once('hello', function (pubKey, addr) {
       t.equal(pubKey.fingerprint(), a.fingerprint)
       destroyNodes(nodes)
     })
   })
 })
 
-function makeConnectedDHTs(n, cb) {
+function makeConnectedDHTs (n, cb) {
   var dhts = []
   for (var i = 0; i < n; i++) {
     var dht = new DHT({ bootstrap: false })
@@ -140,7 +136,7 @@ function makeConnectedDHTs(n, cb) {
     dhts.push(dht)
   }
 
-  function finish() {
+  function finish () {
     if (--n === 0) {
       makeFriends(dhts)
       cb(dhts)
@@ -150,9 +146,9 @@ function makeConnectedDHTs(n, cb) {
   return dhts
 }
 
-function makeConnectedNodes(n, cb) {
-  makeConnectedDHTs(n, function(dhts) {
-    var nodes = dhts.map(function(dht, i) {
+function makeConnectedNodes (n, cb) {
+  makeConnectedDHTs(n, function (dhts) {
+    var nodes = dhts.map(function (dht, i) {
       return new Zlorp({
         name: names[i],
         port: dht.address().port,
@@ -165,11 +161,11 @@ function makeConnectedNodes(n, cb) {
   })
 }
 
-function destroyNodes(nodes) {
-  nodes.forEach(function(node) { node.destroy() })
+function destroyNodes (nodes) {
+  nodes.forEach(function (node) { node.destroy() })
 }
 
-function makeFriends(dhts) {
+function makeFriends (dhts) {
   var n = dhts.length
 
   for (var i = 0; i < n; i++) {

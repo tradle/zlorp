@@ -4,8 +4,13 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "node test"
+    "test": "node test",
+    "style": "standard"
   },
+  "pre-commit": [
+    "style",
+    "test"
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/mvayngrib/zlorp"
@@ -45,6 +50,8 @@
     "nat-upnp": "^0.2.11"
   },
   "devDependencies": {
-    "leveldown": "^1.0.6"
+    "leveldown": "^1.0.6",
+    "pre-commit": "^1.0.7",
+    "standard": "git://github.com/feross/standard.git"
   }
 }

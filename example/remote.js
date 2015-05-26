@@ -10,7 +10,6 @@ var DSA = require('otr').DSA
 var myName = process.argv[2]
 if (!privKeys[myName]) throw new Error('no key found for ' + name)
 
-var keyType
 var fingerprints = {}
 
 for (var name in privKeys) {
@@ -24,18 +23,18 @@ var node = new Node({
   leveldown: leveldown
 })
 
-var others = Object.keys(privKeys).filter(function(n) {
+var others = Object.keys(privKeys).filter(function (n) {
   return n !== myName
 })
 
-others.forEach(function(name) {
+others.forEach(function (name) {
   var otherfinger = fingerprints[name]
   node.contact({
     fingerprint: otherfinger,
     name: name
   })
 
-  node.on('connect', function(fingerprint) {
+  node.on('connect', function (fingerprint) {
     if (fingerprint === otherfinger) {
       console.log('Tell ' + name + ' how you feel')
     }
@@ -44,13 +43,13 @@ others.forEach(function(name) {
 
 process.openStdin()
   .pipe(split())
-  .on('data', function(line) {
-    others.forEach(function(name) {
+  .on('data', function (line) {
+    others.forEach(function (name) {
       node.send(line, fingerprints[name])
     })
   })
 
-node.on('data', function(data, from) {
+node.on('data', function (data, from) {
   for (var name in fingerprints) {
     if (fingerprints[name] === from) {
       console.log(name + ': ' + data.toString())
@@ -58,16 +57,16 @@ node.on('data', function(data, from) {
   }
 })
 
-// process.on('exit', exitHandler.bind(null, { cleanup:true }));
+// process.on('exit', exitHandler.bind(null, { cleanup:true }))
 
 // //catches ctrl+c event
-// process.on('SIGINT', exitHandler.bind(null, { exit:true }));
+// process.on('SIGINT', exitHandler.bind(null, { exit:true }))
 
 // //catches uncaught exceptions
-// process.on('uncaughtException', exitHandler.bind(null, { exit:true }));
+// process.on('uncaughtException', exitHandler.bind(null, { exit:true }))
 
 // function exitHandler(options, err) {
-//   if (err) console.log(err.stack);
+//   if (err) console.log(err.stack)
 
 //   node.destroy(exit)
 //   var timeoutId = setTimeout(exit, 5000)

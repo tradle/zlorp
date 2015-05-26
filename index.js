@@ -1,4 +1,3 @@
-
 require('sock-jack')
 var levelup = require('levelup')
 var dgram = require('dgram')
@@ -32,7 +31,7 @@ for (var i in interfaces) {
   }
 }
 
-function Node(options) {
+function Node (options) {
   var self = this
 
   options = options || {}
@@ -75,9 +74,9 @@ function Node(options) {
     this.once('ready', this.available.bind(this))
   }
 
-  function onExternalIp(err, ip) {
+  function onExternalIp (err, ip) {
     self._ipDone = true
-    if (ip) {
+    if (!err && ip) {
       self.ip = ip
       self.address = self.ip + ':' + self.port
     }
@@ -89,7 +88,7 @@ function Node(options) {
 inherits(Node, EventEmitter)
 utils.destroyify(Node)
 
-Node.prototype._loadDHT = function(dht) {
+Node.prototype._loadDHT = function (dht) {
   var self = this
 
   if (this._dht) throw new Error('already hooked up to DHT')
@@ -99,67 +98,65 @@ Node.prototype._loadDHT = function(dht) {
   if (dht || !this._db) {
     this._dht = dht
     configure()
-  }
-  else if (this._db) {
-    this._db.get(DHT_KEY, function(err, result) {
-      if (result) self._dht = new DHT({ bootstrap: result })
+  } else if (this._db) {
+    this._db.get(DHT_KEY, function (err, result) {
+      if (!err && result) self._dht = new DHT({ bootstrap: result })
 
       configure()
     })
   }
 
-  function configure() {
+  function configure () {
     if (!self._dht) self._dht = new DHT()
 
     try {
       self._dht.listen(self.port)
-    } catch (err) {
-    }
+    } catch (err) {}
 
     self._dht.setMaxListeners(500)
-    self._dht.socket.filterMessages(function(msg, rinfo) {
+    self._dht.socket.filterMessages(function (msg, rinfo) {
       return /^d1:.?d2:id20:/.test(msg)
     })
 
-    self._dht.on('node', function(addr) {
+    self._dht.on('node', function (addr) {
       self._dht._sendPing(addr)
     })
 
     self._dht.once('ready', self._checkReady.bind(self))
-    self._dht.on('peer', function(addr, infoHash, from) {
+    self._dht.on('peer', function (addr, infoHash, from) {
       self._dht.emit('peer:' + infoHash, addr, from)
     })
 
     checkPort()
   }
 
-  function checkPort() {
+  function checkPort () {
     if (!self._dht.listening) return self._dht.once('listening', checkPort)
 
     var dhtPort = self._dht.address().port
     if (self.port && dhtPort !== self.port) {
-      throw new Error('node must share DHT\'s port')
+      throw new Error("node must share DHT's port")
     }
     else self.port = dhtPort
 
     onPort()
   }
 
-  function onPort() {
-    self.socket.bind(self.port, function() {
+  function onPort () {
+    self.socket.bind(self.port, function () {
       self._socketReady = true
       self._checkReady()
     })
   }
 }
 
-Node.prototype._addrIsSelf = function(addr) {
-  return this.address === addr || LOCAL_HOSTS[4].some(function(host) {
-    return host + ':' + this.port === addr
-  }, this)
+Node.prototype._addrIsSelf = function (addr) {
+  return this.address === addr || LOCAL_HOSTS[4].some(function (host) {
+      return host + ':' + this.port === addr
+    }, this)
 }
 
-Node.prototype._checkReady = function() {
+Node.prototype._checkReady = function () {
   var self = this
 
   if (!(this._socketReady && (this._dht && this._dht.ready) && this._ipDone)) return
@@ -171,37 +168,36 @@ Node.prototype._checkReady = function() {
   this.emit('ready')
   this._lookupForever(this.rInfoHash)
 
-  function connect(addr, infoHash) {
+  function connect (addr, infoHash) {
     if (self._addrIsSelf(addr) || self.getPeerWith('address', addr)) return
 
     if (infoHash === self.rInfoHash) {
       if (self._available) {
         self.connect(addr)
-      }
-      else {
+      } else {
         self.emit('knock', addr)
       }
     }
 
     if (self.getUnresolvedBy('infoHash', infoHash) ||
-       self.getUnresolvedBy('rInfoHash', infoHash)) {
+      self.getUnresolvedBy('rInfoHash', infoHash)) {
       self.connect(addr)
     }
   }
 }
 
-Node.prototype._debug = function() {
+Node.prototype._debug = function () {
   var args = [].slice.call(arguments)
   var me = (this.name || '') + ' ' + (this.address || '') + ' ' + (this.infoHash)
   args.unshift(me)
   debug.apply(null, args)
 }
 
-Node.prototype.blacklist = function(addr) {
+Node.prototype.blacklist = function (addr) {
   this.blacklist[addr] = true
 }
 
-Node.prototype.connect = function(addr, expectedFingerprint) {
+Node.prototype.connect = function (addr, expectedFingerprint) {
   var self = this
 
   if (this.address === addr) throw new Error('cannot connect to self')
@@ -220,10 +216,10 @@ Node.prototype.connect = function(addr, expectedFingerprint) {
     socket: this.socket
   })
 
-  peer.once('resolved', function(addr, pubKey) {
+  peer.once('resolved', function (addr, pubKey) {
     var fingerprint = pubKey.fingerprint()
     if (expectedFingerprint && fingerprint !== expectedFingerprint) {
-      self._debug('peer at ' + addr + ' doesn\'t have expected fingerprint, destroying them')
+      self._debug('peer at ' + addr + " doesn't have expected fingerprint, destroying them")
       peer.destroy()
       return
     }
@@ -242,31 +238,30 @@ Node.prototype.connect = function(addr, expectedFingerprint) {
         queue.forEach(peer.send, peer)
         delete self.queue[fingerprint]
       }
-    }
-    else {
+    } else {
       if (self._ignoreStrangers) peer.destroy()
       else self.emit('hello', pubKey, addr)
     }
   })
 
-  peer.once('error', function(err) {
+  peer.once('error', function (err) {
     debug('experienced error with peer, blacklisting', err)
     self.blacklist[addr] = true
     peer.destroy()
   })
 
-  peer.once('destroy', function() {
+  peer.once('destroy', function () {
     self.removePeerWith('fingerprint', peer.fingerprint)
   })
 
-  peer.on('data', function(data) {
+  peer.on('data', function (data) {
     self.emit('data', data, peer.fingerprint)
   })
 
   peer.connect()
 }
 
-Node.prototype.ignoreStrangers = function() {
+Node.prototype.ignoreStrangers = function () {
   this._ignoreStrangers = true
   return this
 }
@@ -276,7 +271,7 @@ Node.prototype.ignoreStrangers = function() {
  * @param  {String|Buffer} msg
  * @param  {String} fingerprint - peer, or peer's pubKey or fingerprint
  */
-Node.prototype.send = function(msg, fingerprint) {
+Node.prototype.send = function (msg, fingerprint) {
   var peer
 
   if (!this.ready) return this.once('ready', this.send.bind(this, msg, fingerprint))
@@ -295,16 +290,16 @@ Node.prototype.send = function(msg, fingerprint) {
   peer.send(msg)
 }
 
-Node.prototype.getUnresolvedBy = function(property, value) {
+Node.prototype.getUnresolvedBy = function (property, value) {
   for (var key in this.unresolved) {
     if (this.unresolved[key][property] === value) return this.unresolved[key]
   }
 }
 
-Node.prototype.getPeerWith = function(property, value) {
+Node.prototype.getPeerWith = function (property, value) {
   return search(this.peers) || search(this.scouts)
 
-  function search(peers) {
+  function search (peers) {
     for (var key in peers) {
       if (peers[key][property] === value) return peers[key]
     }
@@ -312,10 +307,10 @@ Node.prototype.getPeerWith = function(property, value) {
 }
 
 // TODO: resolve code duplication with getPeerWith
-Node.prototype.removePeerWith = function(property, value) {
+Node.prototype.removePeerWith = function (property, value) {
   return search(this.peers) || search(this.scouts)
 
-  function search(peers) {
+  function search (peers) {
     var peer
     for (var key in peers) {
       peer = peers[key]
@@ -327,7 +322,7 @@ Node.prototype.removePeerWith = function(property, value) {
   }
 }
 
-Node.prototype.getPeer = function(fingerprint) {
+Node.prototype.getPeer = function (fingerprint) {
   return this.getPeerWith('fingerprint', fingerprint)
 }
 
@@ -339,7 +334,7 @@ Node.prototype.getPeer = function(fingerprint) {
  * @param {String} options.address - peer's ip:port
  * @param {String} options.name - optional, peer's name
  */
-Node.prototype.contact = function(options) {
+Node.prototype.contact = function (options) {
   var self = this
 
   assert(typeof options === 'object', 'Missing required property: options')
@@ -355,14 +350,14 @@ Node.prototype.contact = function(options) {
 
   if (this.getPeerWith('infoHash', infoHash)) return
 
-  var potential = this.unresolved[infoHash] = extend({
+  this.unresolved[infoHash] = extend({
     fingerprint: fingerprint,
     infoHash: infoHash,
     rInfoHash: rInfoHash
   }, options)
 
   this._lookupForever(infoHash)
-  this._dht.once('peer:' + infoHash, function(addr) {
+  this._dht.once('peer:' + infoHash, function (addr) {
     self._stopLookingUp(infoHash)
     self._announceForever(rInfoHash)
   })
@@ -371,22 +366,22 @@ Node.prototype.contact = function(options) {
 
   this._reemitExistingPeers()
   this._relookup()
-  // this._reannounce()
+// this._reannounce()
 }
 
-Node.prototype._relookup = function() {
+Node.prototype._relookup = function () {
   for (var infoHash in this._lookupTimeouts) {
     this._lookupForever(infoHash)
   }
 }
 
-Node.prototype._reannounce = function() {
+Node.prototype._reannounce = function () {
   for (var infoHash in this._announceTimeouts) {
     this._announceForever(infoHash)
   }
 }
 
-Node.prototype._reemitExistingPeers = function() {
+Node.prototype._reemitExistingPeers = function () {
   // re-emit existing peers
   var peers = this._dht.peers
   for (var infoHash in peers) {
@@ -397,7 +392,7 @@ Node.prototype._reemitExistingPeers = function() {
   }
 }
 
-Node.prototype._announceForever = function(infoHash) {
+Node.prototype._announceForever = function (infoHash) {
   var self = this
 
   if (!this.ready) return this.once('ready', this._lookupForever.bind(this, infoHash))
@@ -406,7 +401,7 @@ Node.prototype._announceForever = function(infoHash) {
 
   announce()
 
-  function announce() {
+  function announce () {
     // self._dht.announce(infoHash, self.port, loop)
     // use implied_port option by not specifying port
     if (self._destroying) return
@@ -414,13 +409,13 @@ Node.prototype._announceForever = function(infoHash) {
     self._dht.announce(infoHash, loop)
   }
 
-  function loop() {
+  function loop () {
     clearTimeout(self._announceTimeouts[self.infoHash])
     self._announceTimeouts[self.infoHash] = setTimeout(announce, Node.ANNOUNCE_INTERVAL)
   }
 }
 
-Node.prototype._lookupForever = function(infoHash) {
+Node.prototype._lookupForever = function (infoHash) {
   var self = this
 
   if (!this.ready) return this.once('ready', this._lookupForever.bind(this, infoHash))
@@ -429,61 +424,61 @@ Node.prototype._lookupForever = function(infoHash) {
 
   lookup()
 
-  function lookup() {
+  function lookup () {
     if (self._destroying) return
     if (!self._dht.ready) self._dht.once('ready', lookup)
     else self._dht.lookup(infoHash, loop)
   }
 
-  function loop() {
+  function loop () {
     clearTimeout(self._lookupTimeouts[infoHash])
     self._lookupTimeouts[infoHash] = setTimeout(lookup, Node.LOOKUP_INTERVAL)
   }
 }
 
-Node.prototype._stopAnnouncing = function(infoHash) {
+Node.prototype._stopAnnouncing = function (infoHash) {
   clearTimeout(this._announceTimeouts[infoHash])
   delete this._announceTimeouts[infoHash]
 }
 
-Node.prototype._stopLookingUp = function(infoHash) {
+Node.prototype._stopLookingUp = function (infoHash) {
   clearTimeout(this._lookupTimeouts[infoHash])
   delete this._lookupTimeouts[infoHash]
 }
 
-Node.prototype.available = function() {
+Node.prototype.available = function () {
   this._available = true
   this._announceForever(this.infoHash)
   return this
 }
 
-Node.prototype.unavailable = function() {
+Node.prototype.unavailable = function () {
   this._available = false
   this._stopAnnouncing(this.infoHash)
   return this
 }
 
-Node.prototype._destroy = function(cb) {
+Node.prototype._destroy = function (cb) {
   var self = this
   var togo = 1
 
-  for (var key in this._announceTimeouts) {
-    clearTimeout(this._announceTimeouts[key])
+  for (var atKey in this._announceTimeouts) {
+    clearTimeout(this._announceTimeouts[atKey])
   }
 
-  for (var key in this._lookupTimeouts) {
-    clearTimeout(this._lookupTimeouts[key])
+  for (var ltKey in this._lookupTimeouts) {
+    clearTimeout(this._lookupTimeouts[ltKey])
   }
 
   if (this._db) {
     togo++
     this._debug('saving dht')
-    this._db.put(DHT_KEY, this._dht.toArray(), function() {
+    this._db.put(DHT_KEY, this._dht.toArray(), function () {
       self._db.close(finish)
     })
   }
 
-  this._dht.destroy(function() {
+  this._dht.destroy(function () {
     self._dht.removeAllListeners()
     finish()
   })
@@ -491,7 +486,7 @@ Node.prototype._destroy = function(cb) {
   destroy(this.peers)
   destroy(this.scouts)
 
-  function destroy(peers) {
+  function destroy (peers) {
     self._debug('destroying', Object.keys(peers).length, 'peers')
     for (var key in peers) {
       togo++
@@ -499,12 +494,12 @@ Node.prototype._destroy = function(cb) {
     }
   }
 
-  function finish() {
+  function finish () {
     if (--togo === 0) {
       try {
         self.socket.close()
       } catch (err) {
-        console.warn('attempting to close socket that\'s already closed')
+        console.warn("attempting to close socket that's already closed")
       }
 
       cb()
