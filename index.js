@@ -17,6 +17,7 @@ Node.OTR = OTR
 Node.DSA = OTR.DSA
 Node.LOOKUP_INTERVAL = 30000
 Node.ANNOUNCE_INTERVAL = 3000000
+Node.KEEP_ALIVE_INTERVAL = 60000
 var externalIp = require('./lib/externalIp')
 var DHT_KEY = 'dht'
 var DB_PATH = 'zlorp-db'
@@ -100,7 +101,9 @@ Node.prototype._loadDHT = function (dht) {
     configure()
   } else if (this._db) {
     this._db.get(DHT_KEY, function (err, result) {
-      if (!err && result) self._dht = new DHT({ bootstrap: result })
+      if (!err && result && result.length) {
+        self._dht = new DHT({ bootstrap: result })
+      }
 
       configure()
     })
@@ -126,6 +129,8 @@ Node.prototype._loadDHT = function (dht) {
     self._dht.on('peer', function (addr, infoHash, from) {
       self._dht.emit('peer:' + infoHash, addr, from)
     })
+
+    self._keepAlive()
 
     checkPort()
   }
@@ -458,9 +463,22 @@ Node.prototype.unavailable = function () {
   return this
 }
 
+Node.prototype._keepAlive = function () {
+  if ('_pingNodesInterval' in this) return
+
+  var dht = this._dht
+  this._pingNodesInterval = setInterval(function () {
+    dht.toArray().forEach(function (n) {
+      dht._sendPing(n.addr)
+    })
+  }, Node.KEEP_ALIVE_INTERVAL)
+}
+
 Node.prototype._destroy = function (cb) {
   var self = this
   var togo = 1
+
+  clearInterval(this._pingNodesInterval)
 
   for (var atKey in this._announceTimeouts) {
     clearTimeout(this._announceTimeouts[atKey])
