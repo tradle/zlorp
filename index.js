@@ -22,6 +22,7 @@ var externalIp = require('./lib/externalIp')
 var DHT_KEY = 'dht'
 var DB_PATH = 'zlorp-db'
 var LOCAL_HOSTS = { 4: [], 6: [] }
+// var BOOTSTRAP_NODES = ['tradle.io:25778']
 var interfaces = os.networkInterfaces()
 for (var i in interfaces) {
   for (var j = 0; j < interfaces[i].length; j++) {
@@ -51,7 +52,10 @@ function Node(options) {
   else externalIp(onExternalIp)
 
   if (options.leveldown) {
-    this._db = levelup(DB_PATH, { db: options.leveldown })
+    this._db = levelup(DB_PATH, {
+      db: options.leveldown,
+      valueEncoding: 'json'
+    })
   }
 
   this.socket = dgram.createSocket('udp4')
@@ -98,11 +102,7 @@ Node.prototype._loadDHT = function(dht) {
   }
   else if (this._db) {
     this._db.get(DHT_KEY, function(err, result) {
-      if (err || !result) {
-        self._dht = new DHT({
-          bootstrap: result
-        })
-      }
+      if (result) self._dht = new DHT({ bootstrap: result })
 
       configure()
     })
@@ -116,11 +116,15 @@ Node.prototype._loadDHT = function(dht) {
     } catch (err) {
     }
 
+    self._dht.setMaxListeners(500)
     self._dht.socket.filterMessages(function(msg, rinfo) {
       return /^d1:.?d2:id20:/.test(msg)
     })
 
-    self._dht.setMaxListeners(500)
+    self._dht.on('node', function(addr) {
+      self._dht._sendPing(addr)
+    })
+
     self._dht.once('ready', self._checkReady.bind(self))
     self._dht.on('peer', function(addr, infoHash, from) {
       self._dht.emit('peer:' + infoHash, addr, from)
@@ -341,7 +345,7 @@ Node.prototype.contact = function(options) {
   assert(typeof options === 'object', 'Missing required property: options')
   assert(options.fingerprint || options.infoHash, 'Provide fingerprint or infoHash')
 
-  // if (!this.ready) return this.once('ready', this.contact.bind(this, options))
+  if (!this.ready) return this.once('ready', this.contact.bind(this, options))
 
   var fingerprint = options.fingerprint
   var infoHash = options.infoHash || utils.infoHash(fingerprint)
@@ -396,6 +400,8 @@ Node.prototype._reemitExistingPeers = function() {
 Node.prototype._announceForever = function(infoHash) {
   var self = this
 
+  if (!this.ready) return this.once('ready', this._lookupForever.bind(this, infoHash))
+
   clearTimeout(this._announceTimeouts[infoHash])
 
   announce()
@@ -416,6 +422,8 @@ Node.prototype._announceForever = function(infoHash) {
 
 Node.prototype._lookupForever = function(infoHash) {
   var self = this
+
+  if (!this.ready) return this.once('ready', this._lookupForever.bind(this, infoHash))
 
   clearTimeout(this._lookupTimeouts[infoHash])
 

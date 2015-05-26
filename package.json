@@ -28,6 +28,7 @@
     "bittorrent-dht": "git://github.com/tradle/bittorrent-dht.git",
     "buffer-equal": "0.0.1",
     "debug": "^2.1.3",
+    "exit-hook": "git://github.com/mvayngrib/exit-hook.git",
     "extend": "^2.0.1",
     "levelup": "^1.0.0-5",
     "otr": "git://github.com/mvayngrib/otr",

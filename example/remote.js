@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 
 // var test = require('tape')
+var exitHook = require('exit-hook')
 var split = require('split')
 var Node = require('../')
 var privKeys = require('./priv')
+var leveldown = require('leveldown')
 var DSA = require('otr').DSA
 var myName = process.argv[2]
 if (!privKeys[myName]) throw new Error('no key found for ' + name)
@@ -18,7 +20,8 @@ for (var name in privKeys) {
 
 var node = new Node({
   key: privKeys[myName],
-  port: process.argv[3] ? Number(process.argv[3]) : undefined
+  port: process.argv[3] ? Number(process.argv[3]) : undefined,
+  leveldown: leveldown
 })
 
 var others = Object.keys(privKeys).filter(function(n) {
@@ -55,22 +58,24 @@ node.on('data', function(data, from) {
   }
 })
 
-process.on('exit', exitHandler.bind(null, { cleanup:true }));
+// process.on('exit', exitHandler.bind(null, { cleanup:true }));
 
-//catches ctrl+c event
-process.on('SIGINT', exitHandler.bind(null, { exit:true }));
+// //catches ctrl+c event
+// process.on('SIGINT', exitHandler.bind(null, { exit:true }));
 
-//catches uncaught exceptions
-process.on('uncaughtException', exitHandler.bind(null, { exit:true }));
+// //catches uncaught exceptions
+// process.on('uncaughtException', exitHandler.bind(null, { exit:true }));
 
-function exitHandler(options, err) {
-  if (err) console.log(err.stack);
+// function exitHandler(options, err) {
+//   if (err) console.log(err.stack);
 
-  node.destroy(exit)
-  var timeoutId = setTimeout(exit, 5000)
+//   node.destroy(exit)
+//   var timeoutId = setTimeout(exit, 5000)
 
-  function exit() {
-    clearTimeout(timeoutId)
-    if (options.exit) process.exit()
-  }
-}
+//   function exit() {
+//     clearTimeout(timeoutId)
+//     if (options.exit) process.exit()
+//   }
+// }
+
+exitHook(node.destroy.bind(node))
