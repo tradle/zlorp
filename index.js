@@ -1,4 +1,5 @@
 require('sock-jack')
+
 var levelup = require('levelup')
 var dgram = require('dgram')
 var assert = require('assert')
@@ -51,7 +52,9 @@ function Node (options) {
   if (options.externalIp) onExternalIp(null, options.externalIp)
   else externalIp(onExternalIp)
 
-  if (options.leveldown) {
+  if (options.levelup) {
+    this._db = options.levelup
+  } else if (options.leveldown) {
     this._db = levelup(DB_PATH, {
       db: options.leveldown,
       valueEncoding: 'json'
