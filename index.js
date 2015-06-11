@@ -12,15 +12,16 @@ var typeforce = require('typeforce')
 var utils = require('./lib/utils')
 var Peer = require('./lib/peer')
 var DHT = require('bittorrent-dht')
-var OTR = require('otr')
+var otr = require('otr')
 Node.DHT = DHT
-Node.OTR = OTR
-Node.DSA = OTR.DSA
+Node.OTR = otr.OTR
+Node.DSA = otr.DSA
 Node.LOOKUP_INTERVAL = 30000
 Node.ANNOUNCE_INTERVAL = 3000000
 Node.KEEP_ALIVE_INTERVAL = 60000
 var externalIp = require('./lib/externalIp')
 var DHT_KEY = 'dht'
+var INSTANCE_TAG_KEY = 'instance_tag'
 var DB_PATH = 'zlorp-db'
 var LOCAL_HOSTS = { 4: [], 6: [] }
 // var BOOTSTRAP_NODES = ['tradle.io:25778']
@@ -55,7 +56,7 @@ function Node (options) {
   if (options.levelup) {
     this._db = options.levelup
   } else if (options.leveldown) {
-    this._db = levelup(DB_PATH, {
+    this._db = levelup(DB_PATH + '-' + this.fingerprint, {
       db: options.leveldown,
       valueEncoding: 'json'
     })
@@ -65,6 +66,7 @@ function Node (options) {
   this.socket.setMaxListeners(0)
 
   this._loadDHT(options.dht)
+  this._loadInstanceTag()
   this.unresolved = {}
   this.peers = {}
   this.scouts = {}
@@ -79,18 +81,42 @@ function Node (options) {
   }
 
   function onExternalIp (err, ip) {
-    self._ipDone = true
-    if (!err && ip) {
-      self.ip = ip
-      self.address = self.ip + ':' + self.port
-    }
+    if (err) self._debug('unable to get own public ip')
 
+    self.ip = ip
+    self.address = self.ip && (self.ip + ':' + self.port)
     self._checkReady()
   }
 }
 
 inherits(Node, EventEmitter)
 utils.destroyify(Node)
+
+Node.prototype._loadInstanceTag = function () {
+  var self = this
+
+  if (this._db) {
+    this._db.get(INSTANCE_TAG_KEY, function (err, tag) {
+      if (err) self._debug('no instance tag found in storage')
+
+      self.instanceTag = tag
+      finish()
+    })
+  } else {
+    finish()
+  }
+
+  function finish () {
+    if (!self.instanceTag) {
+      self.instanceTag = Node.OTR.makeInstanceTag()
+      if (self._db) {
+        self._db.put(INSTANCE_TAG_KEY, self.instanceTag)
+      }
+    }
+
+    self._checkReady()
+  }
+}
 
 Node.prototype._loadDHT = function (dht) {
   var self = this
@@ -166,8 +192,12 @@ Node.prototype._addrIsSelf = function (addr) {
 
 Node.prototype._checkReady = function () {
   var self = this
+  var ready = this._socketReady
+    && this._dht && this._dht.ready
+    && 'ip' in this
+    && 'instanceTag' in this
 
-  if (!(this._socketReady && (this._dht && this._dht.ready) && this._ipDone)) return
+  if (!ready) return
 
   this._dht.on('announce', connect)
   this._dht.on('peer', connect)
@@ -218,6 +248,7 @@ Node.prototype.connect = function (addr, expectedFingerprint) {
   if (this.blacklist[addr] || this.getPeerWith('address', addr)) return
 
   var peer = this.scouts[addr] = new Peer({
+    instanceTag: this.instanceTag,
     key: this.key,
     address: addr,
     myIp: this.ip,
@@ -237,19 +268,21 @@ Node.prototype.connect = function (addr, expectedFingerprint) {
     var rInfoHash = utils.rInfoHash(fingerprint)
     self._stopAnnouncing(rInfoHash)
     self._stopLookingUp(infoHash)
-    if (self.unresolved[infoHash]) {
-      delete self.scouts[addr]
-      self.peers[fingerprint] = peer
-      self.emit('connect', fingerprint, addr)
-      var queue = self.queue[fingerprint]
-      if (queue) {
-        queue.forEach(peer.send, peer)
-        delete self.queue[fingerprint]
-      }
-    } else {
-      if (self._ignoreStrangers) peer.destroy()
-      else self.emit('hello', pubKey, addr)
+    if (self._ignoreStrangers) return peer.destroy()
+
+    delete self.scouts[addr]
+    self.peers[fingerprint] = peer
+    var queue = self.queue[fingerprint]
+    if (queue) {
+      queue.forEach(peer.send, peer)
+      delete self.queue[fingerprint]
     }
+
+    self.emit('connect', {
+      fingerprint: fingerprint,
+      address: addr,
+      pubKey: pubKey
+    })
   })
 
   peer.once('error', function (err) {

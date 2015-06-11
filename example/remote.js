@@ -34,8 +34,8 @@ others.forEach(function (name) {
     name: name
   })
 
-  node.on('connect', function (fingerprint) {
-    if (fingerprint === otherfinger) {
+  node.on('connect', function (info) {
+    if (info.fingerprint === otherfinger) {
       console.log('Tell ' + name + ' how you feel')
     }
   })
