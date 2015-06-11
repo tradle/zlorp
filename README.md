@@ -63,12 +63,12 @@ b.on('knock', function(addr) {
 })
 ```
 
-#### 'hello'
+#### 'connect'
 
 You now know everything you can know about the other party without access to their medical records: their ip:port and their DSA public key. You can still bail and not get into their tinted-windowed car.
 
 ```js
-b.on('hello', function(pubKey, addr) {
+b.on('connect', function(pubKey, addr) {
   // OTR with this party has passed the AKE successfully
   // you now know their pubKey
   // if you don't want to talk to them 

@@ -52,6 +52,7 @@
   "devDependencies": {
     "leveldown": "^1.0.6",
     "pre-commit": "^1.0.7",
+    "rimraf": "^2.4.0",
     "standard": "git://github.com/feross/standard.git"
   }
 }
