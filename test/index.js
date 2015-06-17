@@ -1,4 +1,5 @@
-require('sock-jack')
+require('sock-plex')
+
 var fs = require('fs')
 var path = require('path')
 var rimraf = require('rimraf')

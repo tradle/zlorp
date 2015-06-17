@@ -1,4 +1,4 @@
-require('sock-jack')
+require('sock-plex')
 
 var levelup = require('levelup')
 var dgram = require('dgram')
@@ -192,10 +192,10 @@ Node.prototype._addrIsSelf = function (addr) {
 
 Node.prototype._checkReady = function () {
   var self = this
-  var ready = this._socketReady
-    && this._dht && this._dht.ready
-    && 'ip' in this
-    && 'instanceTag' in this
+  var ready = this._socketReady &&
+    (this._dht && this._dht.ready) &&
+    'ip' in this &&
+    'instanceTag' in this
 
   if (!ready) return
 
