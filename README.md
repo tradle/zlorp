@@ -1,12 +1,10 @@
 # zlorp
 
-_This module is used by [Tradle](https://github.com/tradle)_
-
-## What is Zlorp
-
-Zlorp is a P2P comm module, meant more as infrastructure for peer to peer applications than a chat client.
+P2P comm module, meant more as infrastructure for peer to peer applications than a chat client.
 
 Find peers on the internet via the BitTorrent DHT, knowing only their public keys (or public key fingerprint), and send structured data to each other with OTR messaging.
+
+_This module is used by [Tradle](https://github.com/tradle)_  
 
 _inspired by [bluntly](https://github.com/danoctavian/bluntly)_
 
