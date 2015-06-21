@@ -13,7 +13,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/mvayngrib/zlorp"
+    "url": "https://github.com/tradle/zlorp"
   },
   "keywords": [
     "zlorp",
@@ -23,9 +23,9 @@
   "author": "Mark Vayngrib <mark.vayngrib@lablz.com> (http://github.com/mvayngrib)",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/mvayngrib/zlorp/issues"
+    "url": "https://github.com/tradle/zlorp/issues"
   },
-  "homepage": "https://github.com/mvayngrib/zlorp",
+  "homepage": "https://github.com/tradle/zlorp",
   "browser": {
     "nat-upnp": false
   },
