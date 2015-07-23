@@ -84,7 +84,6 @@ function Node (options) {
     if (err) self._debug('unable to get own public ip')
 
     self.ip = ip
-    self.address = self.ip && (self.ip + ':' + self.port)
     self._checkReady()
   }
 }
@@ -198,6 +197,8 @@ Node.prototype._checkReady = function () {
     'instanceTag' in this
 
   if (!ready) return
+
+  this.address = this.ip && (this.ip + ':' + this.port)
 
   this._dht.on('announce', connect)
   this._dht.on('peer', connect)
