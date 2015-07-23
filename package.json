@@ -40,7 +40,7 @@
     "rudp": "git://github.com/mvayngrib/node-rudp",
     "safecb": "0.0.1",
     "simple-get": "^1.3.3",
-    "sock-plex": "git://github.com/mvayngrib/sock-plex",
+    "sock-plex": "^1.0.0",
     "split": "^0.3.3",
     "tape": "^4.0.0",
     "thunky": "^0.1.0",
