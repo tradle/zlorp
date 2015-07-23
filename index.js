@@ -258,8 +258,13 @@ Node.prototype.connect = function (addr, expectedFingerprint) {
   peer.once('resolved', function (addr, pubKey) {
     var fingerprint = pubKey.fingerprint()
     if (expectedFingerprint && fingerprint !== expectedFingerprint) {
-      self._debug('peer at ' + addr + " doesn't have expected fingerprint, destroying them")
+      self._debug('peer at ' + addr + ' doesn\'t have expected fingerprint, destroying them')
       peer.destroy()
+      return
+    }
+
+    if (self.peers[fingerprint]) {
+      self._debug('already connected to peer with fingerprint: ' + fingerprint)
       return
     }
 
@@ -286,9 +291,11 @@ Node.prototype.connect = function (addr, expectedFingerprint) {
   })
 
   peer.once('error', function (err) {
-    debug('experienced error with peer, blacklisting', err)
-    self.blacklist[addr] = true
-    peer.destroy()
+    debug('experienced otr error with peer', err)
+    // self.blacklist[addr] = true
+    peer.destroy(function () {
+      self.connect(addr, expectedFingerprint)
+    })
   })
 
   peer.once('destroy', function () {
