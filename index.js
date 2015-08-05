@@ -126,6 +126,7 @@ Node.prototype._loadDHT = function (dht) {
 
   if (dht || !this._db) {
     this._dht = dht
+    this._dontKillDHT = true
     configure()
   } else if (this._db) {
     this._db.get(DHT_KEY, function (err, result) {
@@ -520,7 +521,7 @@ Node.prototype._keepAlive = function () {
 
 Node.prototype._destroy = function (cb) {
   var self = this
-  var togo = 1
+  var togo = 0
 
   clearInterval(this._pingNodesInterval)
 
@@ -532,18 +533,23 @@ Node.prototype._destroy = function (cb) {
     clearTimeout(this._lookupTimeouts[ltKey])
   }
 
-  if (this._db) {
-    togo++
-    this._debug('saving dht')
-    this._db.put(DHT_KEY, this._dht.toArray(), function () {
-      self._db.close(finish)
-    })
-  }
+  if (this._dht) {
+    if (this._db) {
+      togo++
+      this._debug('saving dht')
+      this._db.put(DHT_KEY, this._dht.toArray(), function () {
+        self._db.close(finish)
+      })
+    }
 
-  this._dht.destroy(function () {
-    self._dht.removeAllListeners()
-    finish()
-  })
+    if (!this._dontKillDHT) {
+      togo++
+      this._dht.destroy(function () {
+        self._dht.removeAllListeners()
+        finish()
+      })
+    }
+  }
 
   destroy(this.peers)
   destroy(this.scouts)

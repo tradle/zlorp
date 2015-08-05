@@ -60,16 +60,19 @@ test('pesistent instance tags', function (t) {
 
 test('destroy', function (t) {
   t.timeoutAfter(5000)
+  var dht = new DHT({ bootstrap: false })
   var node = new Zlorp({
     leveldown: leveldown,
-    dht: new DHT({ bootstrap: false }),
+    dht: dht,
     key: dsaKeys[0]
   })
 
   node.on('ready', function () {
     node.destroy(function () {
       t.pass('successfully self-destructed')
-      t.end()
+      dht.destroy(function () {
+        t.end()
+      })
     })
   })
 })
@@ -223,9 +226,10 @@ function makeConnectedNodes (n, cb) {
 
 function destroyNodes (nodes, cb) {
   nodes = [].concat(nodes)
-  var togo = nodes.length
+  var togo = nodes.length * 2
   nodes.forEach(function (node) {
     node.destroy(finish)
+    node._dht.destroy(finish)
   })
 
   function finish () {
