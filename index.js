@@ -44,6 +44,8 @@ function Node (options) {
     key: 'Object'
   }, options)
 
+  this._announceInterval = options.announceInterval
+  this._lookupInterval = options.lookupInterval
   this.name = options.name
   this.key = options.key
   this.port = options.port
@@ -451,6 +453,7 @@ Node.prototype._announceForever = function (infoHash) {
 
   if (!this.ready) return this.once('ready', this._lookupForever.bind(this, infoHash))
 
+  var interval = this._announceInterval || Node.ANNOUNCE_INTERVAL
   clearTimeout(this._announceTimeouts[infoHash])
 
   announce()
@@ -465,7 +468,7 @@ Node.prototype._announceForever = function (infoHash) {
 
   function loop () {
     clearTimeout(self._announceTimeouts[self.infoHash])
-    self._announceTimeouts[self.infoHash] = setTimeout(announce, Node.ANNOUNCE_INTERVAL)
+    self._announceTimeouts[self.infoHash] = setTimeout(announce, interval)
   }
 }
 
@@ -474,6 +477,7 @@ Node.prototype._lookupForever = function (infoHash) {
 
   if (!this.ready) return this.once('ready', this._lookupForever.bind(this, infoHash))
 
+  var interval = this._lookupInterval || Node.LOOKUP_INTERVAL
   clearTimeout(this._lookupTimeouts[infoHash])
 
   lookup()
@@ -481,12 +485,14 @@ Node.prototype._lookupForever = function (infoHash) {
   function lookup () {
     if (self._destroying) return
     if (!self._dht.ready) self.listenOnce(self._dht, 'ready', lookup)
-    else self._dht.lookup(infoHash, loop)
+    else {
+      self._dht.lookup(infoHash, loop)
+    }
   }
 
   function loop () {
     clearTimeout(self._lookupTimeouts[infoHash])
-    self._lookupTimeouts[infoHash] = setTimeout(lookup, Node.LOOKUP_INTERVAL)
+    self._lookupTimeouts[infoHash] = setTimeout(lookup, interval)
   }
 }
 
