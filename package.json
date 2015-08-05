@@ -51,7 +51,7 @@
     "nat-upnp": "^0.2.11"
   },
   "devDependencies": {
-    "leveldown": "^1.0.6",
+    "memdown": "^1.0.0",
     "pre-commit": "^1.0.7",
     "rimraf": "^2.4.0",
     "standard": "git://github.com/feross/standard.git"

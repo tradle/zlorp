@@ -3,7 +3,7 @@ require('sock-plex')
 var fs = require('fs')
 var path = require('path')
 var rimraf = require('rimraf')
-var leveldown = require('leveldown')
+var leveldown = require('memdown')
 var test = require('tape')
 var DSA = require('otr').DSA
 var Zlorp = require('../')
