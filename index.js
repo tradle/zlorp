@@ -13,6 +13,7 @@ var utils = require('./lib/utils')
 var Peer = require('./lib/peer')
 var DHT = require('bittorrent-dht')
 var otr = require('otr')
+var elistener = require('elistener')
 Node.DHT = DHT
 Node.OTR = otr.OTR
 Node.DSA = otr.DSA
@@ -90,6 +91,7 @@ function Node (options) {
 
 inherits(Node, EventEmitter)
 utils.destroyify(Node)
+elistener(Node.prototype)
 
 Node.prototype._loadInstanceTag = function () {
   var self = this
@@ -150,12 +152,12 @@ Node.prototype._loadDHT = function (dht) {
       return /^d1:.?d2:id20:/.test(msg)
     })
 
-    self._dht.on('node', function (addr) {
+    self.listenTo(self._dht, 'node', function (addr) {
       self._dht._sendPing(addr)
     })
 
-    self._dht.once('ready', self._checkReady.bind(self))
-    self._dht.on('peer', function (addr, infoHash, from) {
+    self.listenOnce(self._dht, 'ready', self._checkReady.bind(self))
+    self.listenTo(self._dht, 'peer', function (addr, infoHash, from) {
       self._dht.emit('peer:' + infoHash, addr, from)
     })
 
@@ -165,7 +167,9 @@ Node.prototype._loadDHT = function (dht) {
   }
 
   function checkPort () {
-    if (!self._dht.listening) return self._dht.once('listening', checkPort)
+    if (!self._dht.listening) {
+      return self.listenOnce(self._dht, 'listening', checkPort)
+    }
 
     var dhtPort = self._dht.address().port
     if (self.port && dhtPort !== self.port) {
@@ -201,8 +205,8 @@ Node.prototype._checkReady = function () {
 
   this.address = this.ip && (this.ip + ':' + this.port)
 
-  this._dht.on('announce', connect)
-  this._dht.on('peer', connect)
+  this.listenTo(this._dht, 'announce', connect)
+  this.listenTo(this._dht, 'peer', connect)
 
   this.ready = true
   this.emit('ready')
@@ -407,7 +411,7 @@ Node.prototype.contact = function (options) {
   }, options)
 
   this._lookupForever(infoHash)
-  this._dht.once('peer:' + infoHash, function (addr) {
+  this.listenOnce(this._dht, 'peer:' + infoHash, function (addr) {
     self._stopLookingUp(infoHash)
     self._announceForever(rInfoHash)
   })
@@ -476,7 +480,7 @@ Node.prototype._lookupForever = function (infoHash) {
 
   function lookup () {
     if (self._destroying) return
-    if (!self._dht.ready) self._dht.once('ready', lookup)
+    if (!self._dht.ready) self.listenOnce(self._dht, 'ready', lookup)
     else self._dht.lookup(infoHash, loop)
   }
 
