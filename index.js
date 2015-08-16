@@ -20,7 +20,7 @@ Node.DSA = otr.DSA
 Node.LOOKUP_INTERVAL = 30000
 Node.ANNOUNCE_INTERVAL = 3000000
 Node.KEEP_ALIVE_INTERVAL = 60000
-var externalIp = require('./lib/externalIp')
+var externalIp = require('bittorrent-dht/lib/public-address')
 var DHT_KEY = 'dht'
 var INSTANCE_TAG_KEY = 'instance_tag'
 var DB_PATH = 'zlorp-db'
@@ -44,6 +44,8 @@ function Node (options) {
     key: 'Object'
   }, options)
 
+  this._ipv = options.ipv || 4
+  this.localIPs = LOCAL_HOSTS[this._ipv]
   this._announceInterval = options.announceInterval
   this._lookupInterval = options.lookupInterval
   this.name = options.name
@@ -87,6 +89,10 @@ function Node (options) {
     if (err) self._debug('unable to get own public ip')
 
     self.ip = ip
+    if (ip && self.localIPs.indexOf(ip) === -1) {
+      self.localIPs.push(ip)
+    }
+
     self._checkReady()
   }
 }
@@ -173,6 +179,7 @@ Node.prototype._loadDHT = function (dht) {
       return self.listenOnce(self._dht, 'listening', checkPort)
     }
 
+    // if (self.port) self.port = self._dht.address().port
     var dhtPort = self._dht.address().port
     if (self.port && dhtPort !== self.port) {
       throw new Error("node must share DHT's port")
@@ -245,13 +252,19 @@ Node.prototype.blacklist = function (addr) {
 
 Node.prototype.connect = function (addr, expectedFingerprint) {
   var self = this
-
-  if (this.address === addr) throw new Error('cannot connect to self')
-
   var hostPort = addr.split(':')
   if (hostPort.length !== 2) throw new Error('invalid address provided')
 
   if (!this.ready) return this.once('ready', this.connect.bind(this, addr, expectedFingerprint))
+
+  if (this.localIPs.indexOf(hostPort[0]) !== -1) {
+    // most external known ip
+    // addr = this.localIPs[this.localIPs.length - 1] + ':' + hostPort[1]
+    // most local known ip
+    addr = this.localIPs[0] + ':' + hostPort[1]
+  }
+
+  if (this.address === addr) throw new Error('cannot connect to self')
 
   if (this.blacklist[addr] || this.getPeerWith('address', addr)) return
 
