@@ -1,5 +1,10 @@
 require('sock-plex')
 
+var SHARE_PORT = process.env.SHARE_PORT
+if (SHARE_PORT) {
+  console.warn('overloading dht port for chat')
+}
+
 var fs = require('fs')
 var path = require('path')
 var rimraf = require('rimraf')
@@ -10,7 +15,7 @@ var Zlorp = require('../')
 var DHT = require('bittorrent-dht')
 var basePort = 20000
 var names = ['bill', 'ted']// , 'rufus', 'missy']//, 'abe lincoln', 'genghis khan', 'beethoven', 'socrates']
-Zlorp.LOOKUP_INTERVAL = Zlorp.ANNOUNCE_INTERVAL = 100
+Zlorp.LOOKUP_INTERVAL = Zlorp.ANNOUNCE_INTERVAL = 1000
 var dsaKeys = require('./dsaKeys')
   .map(function (key) {
     return DSA.parsePrivate(key)
@@ -26,7 +31,11 @@ test('pesistent instance tags', function (t) {
     var b = nodes[1]
     var aTag
     var bTag
-    b.contact(a)
+    b.contact({
+      name: a.name,
+      fingerprint: a.fingerprint
+    })
+
     b.send('hey', a.fingerprint)
 
     a.on('data', function () {
@@ -213,7 +222,7 @@ function makeConnectedNodes (n, cb) {
     var nodes = dhts.map(function (dht, i) {
       return new Zlorp({
         name: names[i],
-        port: dht.address().port,
+        port: SHARE_PORT ? dht.address().port : basePort++,
         dht: dht,
         key: dsaKeys[i],
         leveldown: leveldown

@@ -1,10 +1,10 @@
 {
   "name": "zlorp",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "node test",
+    "test": "node test && SHARE_PORT=1 node test",
     "style": "standard"
   },
   "pre-commit": [
@@ -45,7 +45,8 @@
     "split": "^0.3.3",
     "tape": "^4.0.0",
     "thunky": "^0.1.0",
-    "typeforce": "^1.0.0"
+    "typeforce": "^1.0.0",
+    "utp": "mvayngrib/utp"
   },
   "optionalDependencies": {
     "nat-upnp": "^0.2.11"

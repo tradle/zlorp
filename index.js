@@ -179,12 +179,14 @@ Node.prototype._loadDHT = function (dht) {
       return self.listenOnce(self._dht, 'listening', checkPort)
     }
 
-    // if (self.port) self.port = self._dht.address().port
-    var dhtPort = self._dht.address().port
-    if (self.port && dhtPort !== self.port) {
-      throw new Error("node must share DHT's port")
+    if (self.port && self._dhtPort() !== self.port) {
+      // throw new Error("node must share DHT's port")
+      var warning = 'using a different port may not fully take advantage of UDP hole punching'
+      self.emit('warn', warning)
+      console.warn(warning)
+    } else {
+      self.port = self._dhtPort()
     }
-    else self.port = dhtPort
 
     onPort()
   }
@@ -195,6 +197,14 @@ Node.prototype._loadDHT = function (dht) {
       self._checkReady()
     })
   }
+}
+
+Node.prototype._dhtPort = function () {
+  if (!this.__dhtPort) {
+    this.__dhtPort = this._dht.address().port
+  }
+
+  return this.__dhtPort
 }
 
 Node.prototype._addrIsSelf = function (addr) {
@@ -222,7 +232,11 @@ Node.prototype._checkReady = function () {
   this._lookupForever(this.rInfoHash)
 
   function connect (addr, infoHash) {
-    if (self._addrIsSelf(addr) || self.getPeerWith('address', addr)) return
+    if (self._destroying ||
+        self._addrIsSelf(addr) ||
+        self.getPeerWith('address', addr)) {
+      return
+    }
 
     if (infoHash === self.rInfoHash) {
       if (self._available) {
@@ -431,7 +445,9 @@ Node.prototype.contact = function (options) {
     self._announceForever(rInfoHash)
   })
 
-  if (options.address) this.connect(options.address, fingerprint)
+  if (options.address) {
+    this.connect(options.address, fingerprint)
+  }
 
   this._reemitExistingPeers()
   this._relookup()
@@ -473,10 +489,14 @@ Node.prototype._announceForever = function (infoHash) {
 
   function announce () {
     // self._dht.announce(infoHash, self.port, loop)
-    // use implied_port option by not specifying port
     if (self._destroying) return
 
-    self._dht.announce(infoHash, loop)
+    if (self.port === self._dht.port) {
+      // use implied_port option by not specifying port
+      self._dht.announce(infoHash, loop)
+    } else {
+      self._dht.announce(infoHash, self.port, loop)
+    }
   }
 
   function loop () {
@@ -574,19 +594,21 @@ Node.prototype._destroy = function (cb) {
     }
   }
 
+  togo += Object.keys(this.peers).length
+  togo += Object.keys(this.scouts).length
   destroy(this.peers)
   destroy(this.scouts)
 
   function destroy (peers) {
     self._debug('destroying', Object.keys(peers).length, 'peers')
     for (var key in peers) {
-      togo++
       peers[key].destroy(finish)
     }
   }
 
   function finish () {
     if (--togo === 0) {
+      self._debug('destroyed!')
       try {
         self.socket.close()
       } catch (err) {
