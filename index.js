@@ -61,7 +61,7 @@ function Node (options) {
   if (options.levelup) {
     this._db = options.levelup
   } else if (options.leveldown) {
-    this._db = levelup(DB_PATH + '-' + this.fingerprint, {
+    this._db = levelup(DB_PATH + '-' + this.fingerprint + '.db', {
       db: options.leveldown,
       valueEncoding: 'json'
     })
