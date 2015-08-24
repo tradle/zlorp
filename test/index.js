@@ -24,7 +24,7 @@ var dsaKeys = require('./dsaKeys')
 cleanup()
 
 test('pesistent instance tags', function (t) {
-  // t.timeoutAfter(30000)
+  t.timeoutAfter(30000)
 
   makeConnectedNodes(2, function (nodes) {
     var a = nodes[0]
@@ -182,6 +182,31 @@ test('detect interest from strangers', function (t) {
     b.once('connect', function (info) {
       t.equal(info.fingerprint, a.fingerprint)
       destroyNodes(nodes)
+    })
+  })
+})
+
+test('track delivery', function (t) {
+  t.plan(6)
+  t.timeoutAfter(10000)
+
+  makeConnectedNodes(2, function (nodes) {
+    var a = nodes[0]
+    var b = nodes[1]
+    b.contact({
+      name: a.name,
+      fingerprint: a.fingerprint
+    })
+
+    var sent = 0
+    var words = 'is there anybody out there'.split(/\s/)
+    words.forEach(function (word, i) {
+      b.send(word, a.fingerprint, function () {
+        t.equal(sent++, i)
+        if (i + 1 === words.length) {
+          destroyNodes(nodes, t.pass)
+        }
+      })
     })
   })
 })

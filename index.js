@@ -314,7 +314,10 @@ Node.prototype.connect = function (addr, expectedFingerprint) {
     self.peers[fingerprint] = peer
     var queue = self.queue[fingerprint]
     if (queue) {
-      queue.forEach(peer.send, peer)
+      queue.forEach(function (args) {
+        peer.send.apply(peer, args)
+      })
+
       delete self.queue[fingerprint]
     }
 
@@ -354,10 +357,12 @@ Node.prototype.ignoreStrangers = function () {
  * @param  {String|Buffer} msg
  * @param  {String} fingerprint - peer, or peer's pubKey or fingerprint
  */
-Node.prototype.send = function (msg, fingerprint) {
+Node.prototype.send = function (msg, fingerprint, cb) {
   var peer
 
-  if (!this.ready) return this.once('ready', this.send.bind(this, msg, fingerprint))
+  if (!this.ready) {
+    return this.once('ready', this.send.bind(this, msg, fingerprint, cb))
+  }
 
   peer = this.getPeerWith('fingerprint', fingerprint)
   if (!peer) {
@@ -366,11 +371,11 @@ Node.prototype.send = function (msg, fingerprint) {
     })
 
     var q = this.queue[fingerprint] = this.queue[fingerprint] || []
-    q.push(msg)
+    q.push([msg, cb])
     return
   }
 
-  peer.send(msg)
+  peer.send(msg, cb)
 }
 
 Node.prototype.getUnresolvedBy = function (property, value) {
