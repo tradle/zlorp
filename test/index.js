@@ -1,7 +1,7 @@
 require('sock-plex')
 
-var SHARE_PORT = process.env.SHARE_PORT
-if (SHARE_PORT) {
+var MULTIPLEX = process.env.MULTIPLEX
+if (MULTIPLEX) {
   console.warn('overloading dht port for chat')
 }
 
@@ -123,6 +123,7 @@ test('connect', function (t) {
 })
 
 test('connect knowing ip:port', function (t) {
+  t.timeoutAfter(20000)
   var n = Math.min(names.length, dsaKeys.length)
 
   t.plan(n - 1)
@@ -169,6 +170,7 @@ test('connect knowing ip:port', function (t) {
 })
 
 test('detect interest from strangers', function (t) {
+  t.timeoutAfter(10000)
   t.plan(1)
   makeConnectedNodes(2, function (nodes) {
     var a = nodes[0]
@@ -247,7 +249,7 @@ function makeConnectedNodes (n, cb) {
     var nodes = dhts.map(function (dht, i) {
       return new Zlorp({
         name: names[i],
-        port: SHARE_PORT ? dht.address().port : basePort++,
+        port: MULTIPLEX ? dht.address().port : basePort++,
         dht: dht,
         key: dsaKeys[i],
         leveldown: leveldown
