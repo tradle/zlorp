@@ -5,7 +5,7 @@ var dgram = require('dgram')
 var assert = require('assert')
 var EventEmitter = require('events').EventEmitter
 var inherits = require('util').inherits
-var extend = require('extend')
+var extend = require('xtend')
 var os = require('os')
 var debug = require('debug')('zlorp')
 var typeforce = require('typeforce')
@@ -44,6 +44,7 @@ function Node (options) {
     key: 'Object'
   }, options)
 
+  this._otrOptions = options.otr || {}
   this._ipv = options.ipv || 4
   this.localIPs = LOCAL_HOSTS[this._ipv]
   this._announceInterval = options.announceInterval
@@ -66,9 +67,6 @@ function Node (options) {
       valueEncoding: 'json'
     })
   }
-
-  this.socket = dgram.createSocket('udp4')
-  this.socket.setMaxListeners(0)
 
   this._loadDHT(options.dht)
   this._loadInstanceTag()
@@ -192,10 +190,7 @@ Node.prototype._loadDHT = function (dht) {
   }
 
   function onPort () {
-    self.socket.bind(self.port, function () {
-      self._socketReady = true
-      self._checkReady()
-    })
+    self._checkReady()
   }
 }
 
@@ -215,8 +210,7 @@ Node.prototype._addrIsSelf = function (addr) {
 
 Node.prototype._checkReady = function () {
   var self = this
-  var ready = this._socketReady &&
-    (this._dht && this._dht.ready) &&
+  var ready = (this._dht && this._dht.ready) &&
     'ip' in this &&
     'instanceTag' in this
 
@@ -283,11 +277,14 @@ Node.prototype.connect = function (addr, expectedFingerprint) {
   if (this.blacklist[addr] || this.getPeerWith('address', addr)) return
 
   var peer = this.scouts[addr] = new Peer({
+    otrOptions: this._otrOptions,
     instanceTag: this.instanceTag,
     key: this.key,
     address: addr,
-    myIp: this.ip,
-    socket: this.socket
+    localPort: this.port,
+    myIp: this.ip
+    // ,
+    // socket: this.socket
   })
 
   peer.once('resolved', function (addr, pubKey) {
@@ -359,6 +356,14 @@ Node.prototype.ignoreStrangers = function () {
  */
 Node.prototype.send = function (msg, fingerprint, cb) {
   var peer
+
+  if (!utils.isValidUTF8(msg)) {
+    throw new Error('invalid utf8')
+  }
+
+  if (Buffer.isBuffer(msg)) {
+    msg = utils.fromBuffer(msg)
+  }
 
   if (!this.ready) {
     return this.once('ready', this.send.bind(this, msg, fingerprint, cb))
@@ -614,11 +619,11 @@ Node.prototype._destroy = function (cb) {
   function finish () {
     if (--togo === 0) {
       self._debug('destroyed!')
-      try {
-        self.socket.close()
-      } catch (err) {
-        console.warn("attempting to close socket that's already closed")
-      }
+      // try {
+      //   self.socket.close()
+      // } catch (err) {
+      //   console.warn(err.stack || "attempting to close socket that's already closed")
+      // }
 
       cb()
     }

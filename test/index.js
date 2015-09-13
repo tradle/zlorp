@@ -7,14 +7,17 @@ if (MULTIPLEX) {
 
 var fs = require('fs')
 var path = require('path')
+var crypto = require('crypto')
 var rimraf = require('rimraf')
 var leveldown = require('memdown')
 var test = require('tape')
 var DSA = require('otr').DSA
 var Zlorp = require('../')
 var DHT = require('bittorrent-dht')
+var utils = require('../lib/utils')
 var basePort = 20000
 var names = ['bill', 'ted']// , 'rufus', 'missy']//, 'abe lincoln', 'genghis khan', 'beethoven', 'socrates']
+var strings = require('./strings.json')
 Zlorp.LOOKUP_INTERVAL = Zlorp.ANNOUNCE_INTERVAL = 1000
 var dsaKeys = require('./dsaKeys')
   .map(function (key) {
@@ -22,6 +25,33 @@ var dsaKeys = require('./dsaKeys')
   })
 
 cleanup()
+
+test('basic', function (t) {
+  t.timeoutAfter(30000)
+
+  makeConnectedNodes(2, function (nodes) {
+    var a = nodes[0]
+    var b = nodes[1]
+    b.contact({
+      name: a.name,
+      fingerprint: a.fingerprint
+    })
+
+    var sending = []
+    var togo = strings.length
+    strings.forEach(function(msg) {
+      sending.push(msg)
+      b.send(msg, a.fingerprint)
+    })
+
+    a.on('data', function (d) {
+      t.deepEqual(d, sending.shift())
+      if (--togo === 0) {
+        destroyNodes(nodes, t.end)
+      }
+    })
+  })
+})
 
 test('pesistent instance tags', function (t) {
   t.timeoutAfter(30000)
@@ -86,7 +116,7 @@ test('destroy', function (t) {
   })
 })
 
-test('connect', function (t) {
+test('mutual interest', function (t) {
   var n = Math.min(names.length, dsaKeys.length)
 
   t.plan(n - 1)
@@ -126,7 +156,7 @@ test('connect knowing ip:port', function (t) {
   t.timeoutAfter(20000)
   var n = Math.min(names.length, dsaKeys.length)
 
-  t.plan(n - 1)
+  // t.plan(n - 1)
   var nodes = []
   for (var i = 0; i < n; i++) {
     nodes.push(new Zlorp({
@@ -148,7 +178,7 @@ test('connect knowing ip:port', function (t) {
       if (--togo > 0) return
 
       // console.log('destroying')
-      destroyNodes(nodes)
+      destroyNodes(nodes, t.end)
     })
 
     nodes.forEach(function (b, j) {
@@ -171,7 +201,6 @@ test('connect knowing ip:port', function (t) {
 
 test('detect interest from strangers', function (t) {
   t.timeoutAfter(10000)
-  t.plan(1)
   makeConnectedNodes(2, function (nodes) {
     var a = nodes[0]
     var b = nodes[1]
@@ -183,13 +212,12 @@ test('detect interest from strangers', function (t) {
 
     b.once('connect', function (info) {
       t.equal(info.fingerprint, a.fingerprint)
-      destroyNodes(nodes)
+      destroyNodes(nodes, t.end)
     })
   })
 })
 
 test('track delivery', function (t) {
-  t.plan(6)
   t.timeoutAfter(10000)
 
   makeConnectedNodes(2, function (nodes) {
@@ -206,7 +234,7 @@ test('track delivery', function (t) {
       b.send(word, a.fingerprint, function () {
         t.equal(sent++, i)
         if (i + 1 === words.length) {
-          destroyNodes(nodes, t.pass)
+          destroyNodes(nodes, t.end)
         }
       })
     })
@@ -215,6 +243,10 @@ test('track delivery', function (t) {
 
 test('cleanup', function (t) {
   cleanup()
+  // setInterval(function () {
+  //   console.log(process._getActiveHandles())
+  // }, 2000).unref()
+
   t.end()
 })
 
