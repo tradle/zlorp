@@ -7,14 +7,12 @@ if (MULTIPLEX) {
 
 var fs = require('fs')
 var path = require('path')
-var crypto = require('crypto')
 var rimraf = require('rimraf')
 var leveldown = require('memdown')
 var test = require('tape')
 var DSA = require('otr').DSA
 var Zlorp = require('../')
 var DHT = require('bittorrent-dht')
-var utils = require('../lib/utils')
 var basePort = 20000
 var names = ['bill', 'ted']// , 'rufus', 'missy']//, 'abe lincoln', 'genghis khan', 'beethoven', 'socrates']
 var strings = require('./strings.json')
@@ -39,7 +37,7 @@ test('basic', function (t) {
 
     var sending = []
     var togo = strings.length
-    strings.forEach(function(msg) {
+    strings.forEach(function (msg) {
       sending.push(msg)
       b.send(msg, a.fingerprint)
     })
