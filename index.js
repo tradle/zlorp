@@ -1,7 +1,6 @@
 require('sock-plex')
 
 var levelup = require('levelup')
-var dgram = require('dgram')
 var assert = require('assert')
 var EventEmitter = require('events').EventEmitter
 var inherits = require('util').inherits
@@ -329,6 +328,8 @@ Node.prototype.connect = function (addr, expectedFingerprint) {
     debug('experienced otr error with peer', err)
     // self.blacklist[addr] = true
     peer.destroy(function () {
+      if (self._destroying) return
+
       self.connect(addr, expectedFingerprint)
     })
   })
@@ -359,6 +360,10 @@ Node.prototype.send = function (msg, fingerprint, cb) {
 
   if (!utils.isValidUTF8(msg)) {
     throw new Error('invalid utf8')
+  }
+
+  if (msg.indexOf('\x00') !== -1) {
+    throw new Error('message may not contain null bytes')
   }
 
   if (Buffer.isBuffer(msg)) {
@@ -618,13 +623,7 @@ Node.prototype._destroy = function (cb) {
 
   function finish () {
     if (--togo === 0) {
-      self._debug('destroyed!')
-      // try {
-      //   self.socket.close()
-      // } catch (err) {
-      //   console.warn(err.stack || "attempting to close socket that's already closed")
-      // }
-
+      self._debug('destroyed')
       cb()
     }
   }
