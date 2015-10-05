@@ -1,11 +1,13 @@
 #!/usr/bin/env node
 
 // var test = require('tape')
+var crypto = require('crypto')
 var exitHook = require('exit-hook')
 var split = require('split')
 var Node = require('../')
 var privKeys = require('./priv')
-var leveldown = require('leveldown')
+var leveldown = require('memdown')
+var DHT = require('bittorrent-dht')
 var DSA = require('otr').DSA
 var myName = process.argv[2]
 if (!privKeys[myName]) throw new Error('no key found for ' + name)
@@ -20,7 +22,11 @@ for (var name in privKeys) {
 var node = new Node({
   key: privKeys[myName],
   port: process.argv[3] ? Number(process.argv[3]) : undefined,
-  leveldown: leveldown
+  leveldown: leveldown,
+  dht: new DHT({
+    nodeId: getNodeId(fingerprints[myName]),
+    bootstrap: ['tradle.io:25778']
+  })
 })
 
 var others = Object.keys(privKeys).filter(function (n) {
@@ -78,3 +84,10 @@ node.on('data', function (data, from) {
 // }
 
 exitHook(node.destroy.bind(node))
+
+function getNodeId (fingerprint) {
+  return crypto.createHash('sha256')
+    .update(fingerprint)
+    .digest()
+    .slice(0, 20)
+}
