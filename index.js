@@ -502,7 +502,7 @@ Node.prototype._announceForever = function (infoHash) {
     // self._dht.announce(infoHash, self.port, loop)
     if (self._destroying) return
 
-    if (self.port === self._dht.port) {
+    if (self.port === self._dht.address().port) {
       // use implied_port option by not specifying port
       self._dht.announce(infoHash, loop)
     } else {
