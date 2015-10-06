@@ -29,6 +29,7 @@
     "bittorrent-dht": "tradle/bittorrent-dht",
     "buffer-equal": "0.0.1",
     "debug": "^2.1.3",
+    "dht-relay": "mvayngrib/dht-relay",
     "elistener": "^1.0.2",
     "exit-hook": "git://github.com/mvayngrib/exit-hook.git",
     "levelup": "~0.18.0",

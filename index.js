@@ -13,6 +13,7 @@ var Peer = require('./lib/peer')
 var DHT = require('bittorrent-dht')
 var otr = require('otr')
 var elistener = require('elistener')
+var Relay = require('dht-relay')
 Node.DHT = DHT
 Node.OTR = otr.OTR
 Node.DSA = otr.DSA
@@ -54,6 +55,7 @@ function Node (options) {
   this.fingerprint = this.key.fingerprint()
   this.infoHash = utils.infoHash(this.fingerprint)
   this.rInfoHash = utils.rInfoHash(this.fingerprint)
+  this.relay = options.relay
 
   if (options.externalIp) onExternalIp(null, options.externalIp)
   else externalIp(onExternalIp)
@@ -67,7 +69,10 @@ function Node (options) {
     })
   }
 
-  this.socket = dgram.createSocket('udp4')
+  this.socket = options.relay ?
+    Relay.createClient(options.relay) :
+    dgram.createSocket('udp4')
+
   this.socket.filterMessages(function (msg) {
     return !/^d1:.?d2:id20:/.test(msg)
   })
