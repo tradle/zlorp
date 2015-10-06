@@ -69,9 +69,9 @@ function Node (options) {
     })
   }
 
-  this.socket = options.relay ?
-    Relay.createClient(options.relay) :
-    dgram.createSocket('udp4')
+  this.socket = options.relay
+    ? Relay.createClient(options.relay)
+    : dgram.createSocket('udp4')
 
   this.socket.filterMessages(function (msg) {
     return !/^d1:.?d2:id20:/.test(msg)
@@ -294,8 +294,8 @@ Node.prototype.connect = function (addr, expectedFingerprint) {
     address: addr,
     localPort: this.port,
     myIp: this.ip
-    // ,
-    // socket: this.socket
+    socket: this.socket,
+    relay: this.relay
   })
 
   peer.once('resolved', function (addr, pubKey) {

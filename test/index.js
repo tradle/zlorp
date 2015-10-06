@@ -104,7 +104,6 @@ test('long message', function (t) {
 
 test('relay', function (t) {
   t.timeoutAfter(5000)
-
   var relayAddr = {
     port: basePort++,
     address: '127.0.0.1'
