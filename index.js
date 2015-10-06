@@ -67,6 +67,13 @@ function Node (options) {
     })
   }
 
+  this.socket = dgram.createSocket('udp4')
+  this.socket.filterMessages(function (msg) {
+    return !/^d1:.?d2:id20:/.test(msg)
+  })
+
+  this.socket.setMaxListeners(0)
+
   this._loadDHT(options.dht)
   this._loadInstanceTag()
   this.unresolved = {}
