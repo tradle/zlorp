@@ -203,8 +203,8 @@ Node.prototype._dhtPort = function () {
 
 Node.prototype._addrIsSelf = function (addr) {
   return this.address === addr || LOCAL_HOSTS[4].some(function (host) {
-      return host + ':' + this.port === addr
-    }, this)
+    return host + ':' + this.port === addr
+  }, this)
 }
 
 Node.prototype._checkReady = function () {

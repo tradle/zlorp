@@ -67,7 +67,6 @@ test('long message', function (t) {
       fingerprint: a.fingerprint
     })
 
-    var sending = []
     var data = { hey: 'ho' }
     var logoPath = path.resolve('./test/logo.png')
     ChainedObj
@@ -99,10 +98,6 @@ test('long message', function (t) {
           })
         })
       })
-
-      // t.deepEqual(d.toString(), sending.shift())
-      // if (--togo === 0) {
-      // }
     })
   })
 })
