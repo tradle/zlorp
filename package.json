@@ -8,7 +8,6 @@
     "style": "standard"
   },
   "pre-commit": [
-    "style",
     "test"
   ],
   "repository": {
@@ -34,13 +33,9 @@
     "exit-hook": "git://github.com/mvayngrib/exit-hook.git",
     "levelup": "~0.18.0",
     "otr": "git://github.com/mvayngrib/otr#master",
-    "rudp": "git://github.com/mvayngrib/node-rudp",
     "safecb": "0.0.1",
     "simple-get": "^1.3.3",
     "sock-plex": "^1.0.0",
-    "split": "^0.3.3",
-    "string_decoder": "^0.10.31",
-    "tape": "^4.0.0",
     "thunky": "^0.1.0",
     "typeforce": "^1.0.0",
     "xtend": "^4.0.0"
@@ -49,6 +44,7 @@
     "memdown": "^1.0.0",
     "pre-commit": "^1.0.7",
     "rimraf": "^2.4.0",
-    "standard": "git://github.com/feross/standard.git"
+    "split": "^0.3.3",
+    "tape": "^4.0.0",
   }
 }
