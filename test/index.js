@@ -7,15 +7,20 @@ if (MULTIPLEX) {
 
 var fs = require('fs')
 var path = require('path')
+var bufferEquals = require('buffer-equal')
 var rimraf = require('rimraf')
 var leveldown = require('memdown')
 var test = require('tape')
 var DSA = require('otr').DSA
 var Zlorp = require('../')
 var DHT = require('bittorrent-dht')
+var Relay = require('dht-relay/relay')
+var ChainedObj = require('chained-obj')
+var buffers = require('./strings')
+  .map(Buffer)
+
 var basePort = 20000
 var names = ['bill', 'ted']// , 'rufus', 'missy']//, 'abe lincoln', 'genghis khan', 'beethoven', 'socrates']
-var strings = require('./strings.json')
 Zlorp.LOOKUP_INTERVAL = Zlorp.ANNOUNCE_INTERVAL = 1000
 var dsaKeys = require('./dsaKeys')
   .map(function (key) {
@@ -25,7 +30,7 @@ var dsaKeys = require('./dsaKeys')
 cleanup()
 
 test('basic', function (t) {
-  t.timeoutAfter(30000)
+  t.timeoutAfter(5000)
 
   makeConnectedNodes(2, function (nodes) {
     var a = nodes[0]
@@ -36,19 +41,115 @@ test('basic', function (t) {
     })
 
     var sending = []
-    var togo = strings.length
-    strings.forEach(function (msg) {
+    var togo = buffers.length
+    buffers.forEach(function (msg) {
       sending.push(msg)
       b.send(msg, a.fingerprint)
     })
 
     a.on('data', function (d) {
-      t.deepEqual(d, sending.shift())
+      t.deepEqual(d.toString(), sending.shift().toString())
       if (--togo === 0) {
         destroyNodes(nodes, t.end)
       }
     })
   })
+})
+
+test('long message', function (t) {
+  t.timeoutAfter(5000)
+
+  makeConnectedNodes(2, function (nodes) {
+    var a = nodes[0]
+    var b = nodes[1]
+    b.contact({
+      name: a.name,
+      fingerprint: a.fingerprint
+    })
+
+    var sending = []
+    var data = { hey: 'ho' }
+    var logoPath = path.resolve('./test/logo.png')
+    ChainedObj
+      .Builder()
+      .data(data)
+      .attach({
+        path: logoPath,
+        name: 'logo'
+      })
+      .build(function (err, build) {
+        if (err) throw err
+
+        b.send(build.form, a.fingerprint)
+      })
+
+    a.on('data', function (d) {
+      ChainedObj.Parser.parse(d, function (err, parsed) {
+        if (err) throw err
+
+        t.deepEqual(parsed.data, data)
+        fs.readFile(logoPath, function (err, logo1) {
+          if (err) throw err
+
+          fs.readFile(parsed.attachments[0].path, function (err, logo2) {
+            if (err) throw err
+
+            t.ok(bufferEquals(logo1, logo2))
+            destroyNodes(nodes, t.end)
+          })
+        })
+      })
+
+      // t.deepEqual(d.toString(), sending.shift())
+      // if (--togo === 0) {
+      // }
+    })
+  })
+})
+
+test('relay', function (t) {
+  t.timeoutAfter(5000)
+
+  var relayAddr = {
+    port: basePort++,
+    address: '127.0.0.1'
+  }
+
+  var relay = Relay.createServer(relayAddr.port)
+  makeConnectedDHTs(2, function (dhts) {
+    var nodes = dhts.map(function (dht, i) {
+      return new Zlorp({
+        name: names[i],
+        port: MULTIPLEX ? dht.address().port : basePort++,
+        dht: dht,
+        key: dsaKeys[i],
+        leveldown: leveldown,
+        relay: relayAddr
+      })
+    })
+
+    talk(nodes)
+  })
+
+  function talk (nodes) {
+    var a = nodes[0]
+    var b = nodes[1]
+    b.contact({
+      name: a.name,
+      fingerprint: a.fingerprint
+    })
+
+    var msg = new Buffer('hey')
+    b.send(msg, a.fingerprint)
+    a.on('data', function (d) {
+      t.deepEqual(d, msg)
+      relay.close()
+      destroyNodes(nodes, t.end)
+      // setInterval(function () {
+      //   console.log(process._getActiveHandles())
+      // }, 4000).unref()
+    })
+  }
 })
 
 test('pesistent instance tags', function (t) {
@@ -64,9 +165,9 @@ test('pesistent instance tags', function (t) {
       fingerprint: a.fingerprint
     })
 
-    b.send('hey', a.fingerprint)
+    b.send(new Buffer('hey'), a.fingerprint)
 
-    a.on('data', function () {
+    a.on('data', function (data) {
       if (aTag) {
         t.equal(theirTag(a, b), aTag)
         t.equal(theirTag(b, a), bTag)
@@ -89,7 +190,7 @@ test('pesistent instance tags', function (t) {
 
       destroyNodes(b, function () {
         b = nodes[1] = new Zlorp(opts)
-        b.send('ho', a.fingerprint)
+        b.send(new Buffer('ho'), a.fingerprint)
       })
     })
   })
@@ -114,18 +215,17 @@ test('destroy', function (t) {
   })
 })
 
-test('mutual interest', function (t) {
+test('connect', function (t) {
   var n = Math.min(names.length, dsaKeys.length)
 
   t.plan(n - 1)
   makeConnectedNodes(n, function (nodes) {
-    var MSG = 'excellent!'
+    var MSG = new Buffer('excellent!')
     var togo = n - 1
     nodes.forEach(function (a, i) {
       a.available()
       a.once('data', function (msg) {
-        msg = msg.toString('binary')
-        t.equals(msg, MSG, 'connected, sent/received encrypted data')
+        t.deepEquals(msg, MSG, 'connected, sent/received encrypted data')
         if (--togo > 0) return
 
         destroyNodes(nodes)
@@ -154,7 +254,7 @@ test('connect knowing ip:port', function (t) {
   t.timeoutAfter(20000)
   var n = Math.min(names.length, dsaKeys.length)
 
-  // t.plan(n - 1)
+  t.plan(n - 1)
   var nodes = []
   for (var i = 0; i < n; i++) {
     nodes.push(new Zlorp({
@@ -165,18 +265,17 @@ test('connect knowing ip:port', function (t) {
     }))
   }
 
-  var MSG = 'excellent!'
+  var MSG = new Buffer('excellent!')
   var togo = n - 1
   var sender = nodes[0]
   nodes.forEach(function (a, i) {
     a.available()
     a.once('data', function (msg) {
-      msg = msg.toString('binary')
-      t.equals(msg, MSG, 'connected, sent/received encrypted data')
+      t.deepEquals(msg, MSG, 'connected, sent/received encrypted data')
       if (--togo > 0) return
 
       // console.log('destroying')
-      destroyNodes(nodes, t.end)
+      destroyNodes(nodes)
     })
 
     nodes.forEach(function (b, j) {
@@ -199,6 +298,7 @@ test('connect knowing ip:port', function (t) {
 
 test('detect interest from strangers', function (t) {
   t.timeoutAfter(10000)
+  t.plan(1)
   makeConnectedNodes(2, function (nodes) {
     var a = nodes[0]
     var b = nodes[1]
@@ -210,12 +310,13 @@ test('detect interest from strangers', function (t) {
 
     b.once('connect', function (info) {
       t.equal(info.fingerprint, a.fingerprint)
-      destroyNodes(nodes, t.end)
+      destroyNodes(nodes)
     })
   })
 })
 
 test('track delivery', function (t) {
+  t.plan(6)
   t.timeoutAfter(10000)
 
   makeConnectedNodes(2, function (nodes) {
@@ -227,12 +328,12 @@ test('track delivery', function (t) {
     })
 
     var sent = 0
-    var words = 'is there anybody out there'.split(/\s/)
+    var words = 'is there anybody out there'.split(/\s/).map(Buffer)
     words.forEach(function (word, i) {
       b.send(word, a.fingerprint, function () {
         t.equal(sent++, i)
         if (i + 1 === words.length) {
-          destroyNodes(nodes, t.end)
+          destroyNodes(nodes, t.pass)
         }
       })
     })
@@ -241,10 +342,6 @@ test('track delivery', function (t) {
 
 test('cleanup', function (t) {
   cleanup()
-  // setInterval(function () {
-  //   console.log(process._getActiveHandles())
-  // }, 2000).unref()
-
   t.end()
 })
 

@@ -352,26 +352,22 @@ Node.prototype.ignoreStrangers = function () {
 
 /**
  * Send a message to a peer
- * @param  {String|Buffer} msg
+ * @param  {Buffer} msg - base64 string or Buffer
  * @param  {String} fingerprint - peer, or peer's pubKey or fingerprint
  */
 Node.prototype.send = function (msg, fingerprint, cb) {
   var peer
 
-  if (!utils.isValidUTF8(msg)) {
-    throw new Error('invalid utf8')
-  }
-
-  if (msg.indexOf('\x00') !== -1) {
-    throw new Error('message may not contain null bytes')
-  }
-
-  if (Buffer.isBuffer(msg)) {
-    msg = utils.fromBuffer(msg)
-  }
+  typeforce('Buffer', msg)
+  typeforce('String', fingerprint)
 
   if (!this.ready) {
     return this.once('ready', this.send.bind(this, msg, fingerprint, cb))
+  }
+
+  msg = utils.fromBuffer(msg)
+  if (msg.indexOf('\x00') !== -1) {
+    throw new Error('message may not contain null bytes')
   }
 
   peer = this.getPeerWith('fingerprint', fingerprint)
