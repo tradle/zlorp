@@ -104,6 +104,7 @@ test('long message', function (t) {
 
 test('relay', function (t) {
   t.timeoutAfter(5000)
+
   var relayAddr = {
     port: basePort++,
     address: '127.0.0.1'
@@ -255,7 +256,8 @@ test('connect knowing ip:port', function (t) {
       name: names[i],
       port: basePort++,
       dht: new DHT({ bootstrap: false }),
-      key: dsaKeys[i]
+      key: dsaKeys[i],
+      leveldown: leveldown
     }))
   }
 

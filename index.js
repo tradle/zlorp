@@ -1,5 +1,6 @@
 require('sock-plex')
 
+var dgram = require('dgram')
 var levelup = require('levelup')
 var assert = require('assert')
 var EventEmitter = require('events').EventEmitter
@@ -293,7 +294,7 @@ Node.prototype.connect = function (addr, expectedFingerprint) {
     key: this.key,
     address: addr,
     localPort: this.port,
-    myIp: this.ip
+    myIp: this.ip,
     socket: this.socket,
     relay: this.relay
   })
