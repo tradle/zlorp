@@ -83,7 +83,7 @@ function start () {
 function toBuffer (str) {
   if (Buffer.isBuffer(str)) return str
 
-  return new Buffer(st)
+  return new Buffer(str)
 }
 
 // process.on('exit', exitHandler.bind(null, { cleanup:true }))
