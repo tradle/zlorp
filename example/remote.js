@@ -65,7 +65,7 @@ function start () {
     .pipe(split())
     .on('data', function (line) {
       others.forEach(function (name) {
-        node.send(line, fingerprints[name])
+        node.send(toBuffer(line), fingerprints[name])
       })
     })
 
@@ -78,6 +78,12 @@ function start () {
   })
 
   exitHook(node.destroy.bind(node))
+}
+
+function toBuffer (str) {
+  if (Buffer.isBuffer(str)) return str
+
+  return new Buffer(st)
 }
 
 // process.on('exit', exitHandler.bind(null, { cleanup:true }))
