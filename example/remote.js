@@ -8,8 +8,10 @@ var Node = require('../')
 var privKeys = require('./priv')
 var leveldown = require('memdown')
 var DHT = require('bittorrent-dht')
+var dns = require('dns')
 var DSA = require('otr').DSA
 var myName = process.argv[2]
+var tradleIp
 if (!privKeys[myName]) throw new Error('no key found for ' + name)
 
 var fingerprints = {}
@@ -19,49 +21,64 @@ for (var name in privKeys) {
   fingerprints[name] = key.fingerprint()
 }
 
-var node = new Node({
-  key: privKeys[myName],
-  port: process.argv[3] ? Number(process.argv[3]) : undefined,
-  leveldown: leveldown,
-  dht: new DHT({
-    nodeId: getNodeId(fingerprints[myName]),
-    bootstrap: ['tradle.io:25778']
-  })
+dns.lookup('tradle.io', function (err, address) {
+  if (err) throw err
+
+  tradleIp = address
+  start()
 })
 
-var others = Object.keys(privKeys).filter(function (n) {
-  return n !== myName
-})
-
-others.forEach(function (name) {
-  var otherfinger = fingerprints[name]
-  node.contact({
-    fingerprint: otherfinger,
-    name: name
-  })
-
-  node.on('connect', function (info) {
-    if (info.fingerprint === otherfinger) {
-      console.log('Tell ' + name + ' how you feel')
-    }
-  })
-})
-
-process.openStdin()
-  .pipe(split())
-  .on('data', function (line) {
-    others.forEach(function (name) {
-      node.send(line, fingerprints[name])
+function start () {
+  var node = new Node({
+    key: privKeys[myName],
+    port: process.argv[3] ? Number(process.argv[3]) : undefined,
+    leveldown: leveldown,
+    relay: {
+      address: tradleIp,
+      port: 25778
+    },
+    dht: new DHT({
+      nodeId: getNodeId(fingerprints[myName]),
+      bootstrap: ['tradle.io:25778']
     })
   })
 
-node.on('data', function (data, from) {
-  for (var name in fingerprints) {
-    if (fingerprints[name] === from) {
-      console.log(name + ': ' + data.toString())
+  var others = Object.keys(privKeys).filter(function (n) {
+    return n !== myName
+  })
+
+  others.forEach(function (name) {
+    var otherfinger = fingerprints[name]
+    node.contact({
+      fingerprint: otherfinger,
+      name: name
+    })
+
+    node.on('connect', function (info) {
+      if (info.fingerprint === otherfinger) {
+        console.log('Tell ' + name + ' how you feel')
+      }
+    })
+  })
+
+  process.openStdin()
+    .pipe(split())
+    .on('data', function (line) {
+      others.forEach(function (name) {
+        node.send(line, fingerprints[name])
+      })
+    })
+
+  node.on('data', function (data, from) {
+    for (var name in fingerprints) {
+      if (fingerprints[name] === from) {
+        console.log(name + ': ' + data.toString())
+      }
     }
-  }
-})
+  })
+
+  exitHook(node.destroy.bind(node))
+}
 
 // process.on('exit', exitHandler.bind(null, { cleanup:true }))
 
@@ -82,8 +99,6 @@ node.on('data', function (data, from) {
 //     if (options.exit) process.exit()
 //   }
 // }
-
-exitHook(node.destroy.bind(node))
 
 function getNodeId (fingerprint) {
   return crypto.createHash('sha256')
