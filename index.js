@@ -70,15 +70,15 @@ function Node (options) {
     })
   }
 
-  this.socket = options.relay
-    ? Relay.createClient(options.relay)
-    : dgram.createSocket('udp4')
+  // this.socket = options.relay
+  //   ? Relay.createClient(options.relay)
+  //   : dgram.createSocket('udp4')
 
-  this.socket.filterMessages(function (msg) {
-    return !/^d1:.?d2:id20:/.test(msg)
-  })
+  // this.socket.filterMessages(function (msg) {
+  //   return !/^d1:.?d2:id20:/.test(msg)
+  // })
 
-  this.socket.setMaxListeners(0)
+  // this.socket.setMaxListeners(0)
 
   this._loadDHT(options.dht)
   this._loadInstanceTag()
@@ -171,7 +171,13 @@ Node.prototype._loadDHT = function (dht) {
     })
 
     self.listenTo(self._dht, 'node', function (addr) {
-      self._dht._sendPing(addr)
+      var hasNode = self._dht.toArray().some(function (n) {
+        return n.addr === addr
+      })
+
+      if (hasNode) {
+        self._dht._sendPing(addr)
+      }
     })
 
     self.listenOnce(self._dht, 'ready', self._checkReady.bind(self))
