@@ -317,7 +317,6 @@ test('detect interest from strangers', function (t) {
 })
 
 test('track delivery', function (t) {
-  t.plan(6)
   t.timeoutAfter(10000)
 
   makeConnectedNodes(2, function (nodes) {
@@ -329,15 +328,25 @@ test('track delivery', function (t) {
     })
 
     var sent = 0
+    var received = 0
     var words = 'is there anybody out there'.split(/\s/).map(Buffer)
     words.forEach(function (word, i) {
       b.send(word, a.fingerprint, function () {
         t.equal(sent++, i)
-        if (i + 1 === words.length) {
-          destroyNodes(nodes, t.pass)
-        }
+        t.equal(received, sent)
+        tick()
       })
     })
+
+    a.on('data', function (data) {
+      received++
+      tick()
+    })
+
+    var togo = words.length * 2
+    function tick () {
+      if (--togo === 0) destroyNodes(nodes, t.end)
+    }
   })
 })
 
