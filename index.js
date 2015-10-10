@@ -1,5 +1,6 @@
 require('sock-plex')
 
+var net = require('net')
 var dgram = require('dgram')
 var levelup = require('levelup')
 var assert = require('assert')
@@ -58,8 +59,11 @@ function Node (options) {
   this.rInfoHash = utils.rInfoHash(this.fingerprint)
   this.relay = options.relay
 
-  if (options.externalIp) onExternalIp(null, options.externalIp)
-  else externalIp(onExternalIp)
+  if (options.externalIp || net.isUTP) {
+    onExternalIp(null, options.externalIp)
+  } else {
+    externalIp(onExternalIp)
+  }
 
   if (options.levelup) {
     this._db = options.levelup
