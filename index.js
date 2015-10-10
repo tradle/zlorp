@@ -70,16 +70,6 @@ function Node (options) {
     })
   }
 
-  // this.socket = options.relay
-  //   ? Relay.createClient(options.relay)
-  //   : dgram.createSocket('udp4')
-
-  // this.socket.filterMessages(function (msg) {
-  //   return !/^d1:.?d2:id20:/.test(msg)
-  // })
-
-  // this.socket.setMaxListeners(0)
-
   this._loadDHT(options.dht)
   this._loadInstanceTag()
   this.unresolved = {}
@@ -301,7 +291,6 @@ Node.prototype.connect = function (addr, expectedFingerprint) {
     address: addr,
     localPort: this.port,
     myIp: this.ip,
-    socket: this.socket,
     relay: this.relay
   })
 

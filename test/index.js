@@ -16,6 +16,7 @@ var Zlorp = require('../')
 var DHT = require('bittorrent-dht')
 var Relay = require('dht-relay/relay')
 var ChainedObj = require('chained-obj')
+var constants = require('tradle-constants')
 var buffers = require('./strings')
   .map(Buffer)
 
@@ -68,6 +69,7 @@ test('long message', function (t) {
     })
 
     var data = { hey: 'ho' }
+    data[constants.NONCE] = '123'
     var logoPath = path.resolve('./test/logo.png')
     ChainedObj
       .Builder()
@@ -86,6 +88,7 @@ test('long message', function (t) {
       ChainedObj.Parser.parse(d, function (err, parsed) {
         if (err) throw err
 
+        delete parsed.data[constants.SIG]
         t.deepEqual(parsed.data, data)
         fs.readFile(logoPath, function (err, logo1) {
           if (err) throw err
@@ -138,8 +141,10 @@ test('relay', function (t) {
     b.send(msg, a.fingerprint)
     a.on('data', function (d) {
       t.deepEqual(d, msg)
-      relay.close()
-      destroyNodes(nodes, t.end)
+      destroyNodes(nodes, function () {
+        relay.close()
+        t.end()
+      })
       // setInterval(function () {
       //   console.log(process._getActiveHandles())
       // }, 4000).unref()
