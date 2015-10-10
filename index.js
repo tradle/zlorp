@@ -26,8 +26,8 @@ var externalIp = require('bittorrent-dht/lib/public-address')
 var DHT_KEY = 'dht'
 var INSTANCE_TAG_KEY = 'instance_tag'
 var DB_PATH = 'zlorp-db'
-var LOCAL_HOSTS = { 4: [], 6: [] }
 // var BOOTSTRAP_NODES = ['tradle.io:25778']
+var LOCAL_HOSTS = { 4: [], 6: [] }
 var interfaces = os.networkInterfaces()
 for (var i in interfaces) {
   for (var j = 0; j < interfaces[i].length; j++) {
@@ -36,6 +36,8 @@ for (var i in interfaces) {
     if (face.family === 'IPv6') LOCAL_HOSTS[6].push(face.address)
   }
 }
+
+LOCAL_HOSTS[4].push('127.0.0.1')
 
 function Node (options) {
   var self = this
@@ -48,7 +50,7 @@ function Node (options) {
 
   this._otrOptions = options.otr || {}
   this._ipv = options.ipv || 4
-  this.localIPs = LOCAL_HOSTS[this._ipv]
+  this._localIPs = LOCAL_HOSTS[this._ipv]
   this._announceInterval = options.announceInterval
   this._lookupInterval = options.lookupInterval
   this.name = options.name
@@ -59,7 +61,7 @@ function Node (options) {
   this.rInfoHash = utils.rInfoHash(this.fingerprint)
   this.relay = options.relay
 
-  if (options.externalIp || net.isUTP) {
+  if (options.externalIp) {
     onExternalIp(null, options.externalIp)
   } else {
     externalIp(onExternalIp)
@@ -93,8 +95,8 @@ function Node (options) {
     if (err) self._debug('unable to get own public ip')
 
     self.ip = ip
-    if (ip && self.localIPs.indexOf(ip) === -1) {
-      self.localIPs.push(ip)
+    if (ip && self._localIPs.indexOf(ip) === -1) {
+      self._localIPs.push(ip)
     }
 
     self._checkReady()
@@ -215,7 +217,7 @@ Node.prototype._dhtPort = function () {
 }
 
 Node.prototype._addrIsSelf = function (addr) {
-  return this.address === addr || LOCAL_HOSTS[4].some(function (host) {
+  return this.address === addr || this._localIPs.some(function (host) {
     return host + ':' + this.port === addr
   }, this)
 }
@@ -277,11 +279,11 @@ Node.prototype.connect = function (addr, expectedFingerprint) {
 
   if (!this.ready) return this.once('ready', this.connect.bind(this, addr, expectedFingerprint))
 
-  if (!this.relay && this.localIPs.indexOf(hostPort[0]) !== -1) {
+  if (!this.relay && this._localIPs.indexOf(hostPort[0]) !== -1) {
     // most external known ip
-    // addr = this.localIPs[this.localIPs.length - 1] + ':' + hostPort[1]
+    // addr = this._localIPs[this._localIPs.length - 1] + ':' + hostPort[1]
     // most local known ip
-    addr = this.localIPs[0] + ':' + hostPort[1]
+    addr = this._localIPs[0] + ':' + hostPort[1]
   }
 
   if (this.address === addr) throw new Error('cannot connect to self')
