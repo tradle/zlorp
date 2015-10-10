@@ -5,6 +5,8 @@ var crypto = require('crypto')
 var exitHook = require('exit-hook')
 var split = require('split')
 var Node = require('../')
+Node.ANNOUNCE_INTERVAL = 5000
+Node.LOOKUP_INTERVAL = 5000
 var privKeys = require('./priv')
 var leveldown = require('memdown')
 var DHT = require('bittorrent-dht')
@@ -24,17 +26,16 @@ for (var name in privKeys) {
 dns.lookup('tradle.io', function (err, address) {
   if (err) throw err
 
-  tradleIp = address
-  start()
+  start(address)
 })
 
-function start () {
+function start (relayIP) {
   var node = new Node({
     key: privKeys[myName],
     port: process.argv[3] ? Number(process.argv[3]) : undefined,
     leveldown: leveldown,
     relay: {
-      address: tradleIp,
+      address: relayIP,
       port: 25778
     },
     dht: new DHT({
