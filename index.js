@@ -1,6 +1,5 @@
 require('sock-plex')
 
-var net = require('net')
 var dgram = require('dgram')
 var levelup = require('levelup')
 var assert = require('assert')
