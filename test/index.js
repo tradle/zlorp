@@ -332,8 +332,8 @@ test('track delivery', function (t) {
     var words = 'is there anybody out there'.split(/\s/).map(Buffer)
     words.forEach(function (word, i) {
       b.send(word, a.fingerprint, function () {
-        t.equal(sent++, i)
-        t.equal(received, sent)
+        t.equal(sent, i)
+        sent++
         tick()
       })
     })
