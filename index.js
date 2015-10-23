@@ -340,11 +340,12 @@ Node.prototype.connect = function (addr, expectedFingerprint) {
   peer.once('error', function (err) {
     debug('experienced otr error with peer', err)
     // self.blacklist[addr] = true
-    peer.destroy(function () {
-      if (self._destroying) return
+    self._restartPeer(peer, addr, expectedFingerprint)
+  })
 
-      self.connect(addr, expectedFingerprint)
-    })
+  peer.once('disconnected', function () {
+    self._debug('peer ' + addr + ' got disconnected')
+    self._restartPeer(peer, addr, expectedFingerprint)
   })
 
   peer.once('destroy', function () {
@@ -356,6 +357,21 @@ Node.prototype.connect = function (addr, expectedFingerprint) {
   })
 
   peer.connect()
+}
+
+Node.prototype._restartPeer = function (peer, addr, expectedFingerprint) {
+  var self = this
+  var reconnect =  this.peers[expectedFingerprint] === peer
+  peer.destroy(function () {
+    if (!reconnect) return
+
+    setTimeout(function () {
+      if (self._destroying) return
+
+      self._debug('reconnecting to ' + addr)
+      self.connect(addr, expectedFingerprint)
+    }, 2000)
+  })
 }
 
 Node.prototype.ignoreStrangers = function () {
