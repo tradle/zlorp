@@ -152,7 +152,7 @@ test('relay', function (t) {
   }
 })
 
-test('pesistent instance tags', function (t) {
+test('persistent instance tags', function (t) {
   t.timeoutAfter(30000)
 
   makeConnectedNodes(2, function (nodes) {
