@@ -479,7 +479,6 @@ Node.prototype.contact = function (options) {
     rInfoHash: rInfoHash
   }, options)
 
-  this._lookupForever(infoHash)
   this.listenOnce(this._dht, 'peer:' + infoHash, function (addr) {
     self._stopLookingUp(infoHash)
     self._announceForever(rInfoHash)
@@ -490,6 +489,7 @@ Node.prototype.contact = function (options) {
   }
 
   this._reemitExistingPeers()
+  this._lookupForever(infoHash)
   this._relookup()
 // this._reannounce()
 }
