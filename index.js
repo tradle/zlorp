@@ -162,7 +162,7 @@ Node.prototype._loadDHT = function (dht) {
 
     self._dht.setMaxListeners(500)
     self._dht.socket.filterMessages(function (msg, rinfo) {
-      return /^d1:.?d2:id20:/.test(msg)
+      return utils.isDHTMessage(msg)
     })
 
     self.listenTo(self._dht, 'node', function (addr) {
