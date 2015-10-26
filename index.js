@@ -315,6 +315,7 @@ Node.prototype.connect = function (addr, expectedFingerprint) {
     debug('resolved', fingerprint, 'to', addr)
     var infoHash = utils.infoHash(fingerprint)
     var rInfoHash = utils.rInfoHash(fingerprint)
+    delete self.unresolved[infoHash]
     self._stopAnnouncing(rInfoHash)
     self._stopLookingUp(infoHash)
     if (self._ignoreStrangers) return peer.destroy()
@@ -556,9 +557,7 @@ Node.prototype._lookupForever = function (infoHash) {
   lookup()
 
   function lookup () {
-    if (self._destroying) return
-    if (!self._dht.ready) self.listenOnce(self._dht, 'ready', lookup)
-    else {
+    if (!self._destroying) {
       self._dht.lookup(infoHash, loop)
     }
   }

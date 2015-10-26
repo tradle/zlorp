@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "MULTIPLEX=1 node test",
+    "test": "node test && MULTIPLEX=1 node test",
     "style": "standard"
   },
   "pre-commit": [
