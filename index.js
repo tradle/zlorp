@@ -319,6 +319,7 @@ Node.prototype.connect = function (addr, expectedFingerprint) {
     var infoHash = utils.infoHash(fingerprint)
     var rInfoHash = utils.rInfoHash(fingerprint)
     delete self.unresolved[infoHash]
+    self._debug('resolved peer, ceasing lookup for', infoHash, 'and announce for', rInfoHash)
     self._stopAnnouncing(rInfoHash)
     self._stopLookingUp(infoHash)
     if (self._ignoreStrangers) return peer.destroy()
@@ -471,12 +472,16 @@ Node.prototype.contact = function (options) {
 
   var fingerprint = options.fingerprint
   var infoHash = options.infoHash || utils.infoHash(fingerprint)
-  if (this.unresolved[infoHash]) return
-
-  var rInfoHash = utils.rInfoHash(fingerprint)
+  if (this.unresolved[infoHash]) {
+    // hack - hunting for bug
+    if (this._lookupTimeouts[infoHash]) {
+      return
+    }
+  }
 
   if (this.getPeerWith('infoHash', infoHash)) return
 
+  var rInfoHash = utils.rInfoHash(fingerprint)
   this.unresolved[infoHash] = extend({
     fingerprint: fingerprint,
     infoHash: infoHash,
@@ -484,6 +489,7 @@ Node.prototype.contact = function (options) {
   }, options)
 
   this.listenOnce(this._dht, 'peer:' + infoHash, function (addr) {
+    self._debug('got peer, ceasing lookup for', infoHash)
     self._stopLookingUp(infoHash)
     self._announceForever(rInfoHash)
   })
