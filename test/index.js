@@ -31,7 +31,7 @@ var dsaKeys = require('./dsaKeys')
 cleanup()
 
 test('basic', function (t) {
-  t.timeoutAfter(5000)
+  t.timeoutAfter(10000)
 
   makeConnectedNodes(2, function (nodes) {
     var a = nodes[0]
@@ -58,7 +58,7 @@ test('basic', function (t) {
 })
 
 test('long message', function (t) {
-  t.timeoutAfter(5000)
+  t.timeoutAfter(10000)
 
   makeConnectedNodes(2, function (nodes) {
     var a = nodes[0]
@@ -106,7 +106,7 @@ test('long message', function (t) {
 })
 
 test('relay', function (t) {
-  t.timeoutAfter(5000)
+  t.timeoutAfter(10000)
 
   var relayAddr = {
     port: basePort++,
@@ -197,7 +197,7 @@ test('persistent instance tags', function (t) {
 })
 
 test('destroy', function (t) {
-  t.timeoutAfter(5000)
+  t.timeoutAfter(10000)
   var dht = new DHT({ bootstrap: false })
   var node = new Zlorp({
     leveldown: leveldown,

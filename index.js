@@ -1,12 +1,12 @@
 require('sock-plex')
 
 var dgram = require('dgram')
-var levelup = require('levelup')
-var assert = require('assert')
 var EventEmitter = require('events').EventEmitter
 var inherits = require('util').inherits
-var extend = require('xtend')
+var assert = require('assert')
 var os = require('os')
+var levelup = require('levelup')
+var extend = require('xtend')
 var debug = require('debug')('zlorp')
 var typeforce = require('typeforce')
 var utils = require('./lib/utils')
@@ -67,6 +67,7 @@ function Node (options) {
     onExternalIp(null, options.externalIp)
   } else {
     externalIp(onExternalIp)
+    setTimeout(onExternalIp.bind(null, new Error('timed out')), 5000)
   }
 
   if (options.levelup) {
@@ -226,6 +227,8 @@ Node.prototype._addrIsSelf = function (addr) {
 
 Node.prototype._checkReady = function () {
   var self = this
+  if (this.ready) return
+
   var ready = (this._dht && this._dht.ready) &&
     'ip' in this &&
     'instanceTag' in this
@@ -298,7 +301,7 @@ Node.prototype.connect = function (addr, expectedFingerprint) {
     key: this.key,
     address: addr,
     localPort: this.port,
-    myIp: this.ip,
+    // myIp: this.ip,
     relay: this.relay
   })
 
