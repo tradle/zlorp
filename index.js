@@ -404,6 +404,7 @@ Node.prototype.send = function (msg, fingerprint, cb) {
     throw new Error('message may not contain null bytes')
   }
 
+  cb = this._wrapSendCB(msg, cb)
   peer = this.getPeerWith('fingerprint', fingerprint)
   if (!peer) {
     this.contact({
@@ -416,6 +417,14 @@ Node.prototype.send = function (msg, fingerprint, cb) {
   }
 
   peer.send(msg, cb)
+}
+
+Node.prototype._wrapSendCB = function (msg, cb) {
+  var self = this
+  return function () {
+    self._debug('sent', msg)
+    return cb && cb.apply(this, arguments)
+  }
 }
 
 Node.prototype.getUnresolvedBy = function (property, value) {
