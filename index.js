@@ -41,6 +41,9 @@ LOCAL_HOSTS[4].push('127.0.0.1')
 function Node (options) {
   var self = this
 
+  EventEmitter.call(this)
+  this.setMaxListeners(0)
+
   options = options || {}
 
   typeforce({
@@ -160,7 +163,7 @@ Node.prototype._loadDHT = function (dht) {
       self._dht.listen(self.port)
     } catch (err) {}
 
-    self._dht.setMaxListeners(500)
+    self._dht.setMaxListeners(0)
     self._dht.socket.filterMessages(function (msg, rinfo) {
       return utils.isDHTMessage(msg)
     })
