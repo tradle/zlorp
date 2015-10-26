@@ -524,7 +524,7 @@ Node.prototype._reemitExistingPeers = function () {
 Node.prototype._announceForever = function (infoHash) {
   var self = this
 
-  if (!this.ready) return this.once('ready', this._lookupForever.bind(this, infoHash))
+  if (!this.ready) return this.once('ready', this._announceForever.bind(this, infoHash))
 
   var interval = this._announceInterval || Node.ANNOUNCE_INTERVAL
   clearTimeout(this._announceTimeouts[infoHash])
