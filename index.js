@@ -369,7 +369,9 @@ Node.prototype.connect = function (addr, expectedFingerprint) {
 
 Node.prototype._restartPeer = function (peer, addr, expectedFingerprint) {
   var self = this
-  var reconnect =  this.peers[expectedFingerprint] === peer
+  var reconnect = this.peers[expectedFingerprint] === peer ||
+    this.scouts[addr] === peer
+
   peer.destroy(function () {
     if (!reconnect) return
 
@@ -378,7 +380,7 @@ Node.prototype._restartPeer = function (peer, addr, expectedFingerprint) {
 
       self._debug('reconnecting to ' + addr)
       self.connect(addr, expectedFingerprint)
-    }, 2000)
+    }, 1000)
   })
 }
 
