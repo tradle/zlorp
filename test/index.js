@@ -17,6 +17,12 @@ var DHT = require('bittorrent-dht')
 var Relay = require('dht-relay/relay')
 var ChainedObj = require('chained-obj')
 var constants = require('tradle-constants')
+// var methodTimer = require('time-method')
+
+// var zlorpTimer = methodTimer.timeFunctions(Zlorp.prototype)
+// var peerTimer = methodTimer.timeFunctions(require('../lib/peer').prototype)
+// var bigIntTimer = methodTimer.timeFunctions(require('otr/vendor/bigint'))
+
 var buffers = require('./strings')
   .map(Buffer)
 
@@ -111,6 +117,17 @@ test('relay', function (t) {
   var relayAddr = {
     port: basePort++,
     address: '127.0.0.1'
+  }
+
+  var createClient = Relay.createClient
+  // prevent dontProxyLocal flag from being set
+  Relay.createClient = function (socket, proxy, dontProxyLocal) {
+    var args = [].slice.call(arguments)
+    if (typeof args[args.length - 1] === 'boolean') {
+      args.pop()
+    }
+
+    return createClient.apply(this, args)
   }
 
   var relay = Relay.createServer(relayAddr.port)
@@ -351,6 +368,19 @@ test('track delivery', function (t) {
 })
 
 test('cleanup', function (t) {
+  // console.log(toMillis(zlorpTimer.getStats()))
+  // console.log(toMillis(peerTimer.getStats()))
+  // console.log(toMillis(bigIntTimer.getStats()))
+
+  // function toMillis (stats) {
+  //   stats.forEach(function (s) {
+  //     s.time /= 1e6
+  //     s.timePerInvocation /= 1e6
+  //   })
+
+  //   return stats
+  // }
+
   cleanup()
   t.end()
 })
