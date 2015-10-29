@@ -284,14 +284,19 @@ Node.prototype.connect = function (addr, expectedFingerprint) {
 
   if (!this.ready) return this.once('ready', this.connect.bind(this, addr, expectedFingerprint))
 
-  if (!this._localIPs.indexOf(hostPort[0]) !== -1) {
-    // most external known ip
-    // addr = this._localIPs[this._localIPs.length - 1] + ':' + hostPort[1]
-    // most local known ip
-    addr = this._localIPs[0] + ':' + hostPort[1]
-  }
+  // if (!this.relay && this._localIPs.indexOf(hostPort[0]) !== -1) {
+  //   // most external known ip
+  //   // addr = this._localIPs[this._localIPs.length - 1] + ':' + hostPort[1]
+  //   // most local known ip
+  //   addr = this._localIPs[0] + ':' + hostPort[1]
+  // }
 
   if (this.address === addr) throw new Error('cannot connect to self')
+
+  if (this._addrIsSelf(addr)) {
+    this._debug('not connecting to self')
+    return
+  }
 
   if (this.blacklist[addr] || this.getPeerWith('address', addr)) return
 
