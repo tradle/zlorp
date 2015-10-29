@@ -557,15 +557,12 @@ Node.prototype._announceForever = function (infoHash) {
 
     if (self.port === self._dhtPort()) {
       // use implied_port option by not specifying port
-      self._dht.announce(infoHash, loop)
+      self._dht.announce(infoHash)
     } else {
-      self._dht.announce(infoHash, self.port, loop)
+      self._dht.announce(infoHash, self.port)
     }
-  }
 
-  function loop () {
-    clearTimeout(self._announceTimeouts[self.infoHash])
-    self._announceTimeouts[self.infoHash] = setTimeout(announce, interval)
+    self._announceTimeouts[infoHash] = setTimeout(announce, interval)
   }
 }
 
@@ -580,13 +577,9 @@ Node.prototype._lookupForever = function (infoHash) {
   lookup()
 
   function lookup () {
-    if (!self._destroying) {
-      self._dht.lookup(infoHash, loop)
-    }
-  }
+    if (self._destroying) return
 
-  function loop () {
-    clearTimeout(self._lookupTimeouts[infoHash])
+    self._dht.lookup(infoHash)
     self._lookupTimeouts[infoHash] = setTimeout(lookup, interval)
   }
 }
