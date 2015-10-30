@@ -21,7 +21,7 @@ Node.DSA = otr.DSA
 Node.LOOKUP_INTERVAL = 30000
 Node.ANNOUNCE_INTERVAL = 3000000
 Node.KEEP_ALIVE_INTERVAL = 60000
-var externalIp = require('bittorrent-dht/lib/public-address')
+var ExternalIP = require('./lib/externalIP')
 var DHT_KEY = 'dht'
 var INSTANCE_TAG_KEY = 'instance_tag'
 var DB_PATH = 'zlorp-db'
@@ -37,6 +37,8 @@ for (var i in interfaces) {
 }
 
 LOCAL_HOSTS[4].push('127.0.0.1')
+
+module.exports = Node
 
 function Node (options) {
   var self = this
@@ -66,8 +68,11 @@ function Node (options) {
   if (options.externalIp) {
     onExternalIp(null, options.externalIp)
   } else {
-    externalIp(onExternalIp)
-    setTimeout(onExternalIp.bind(null, new Error('timed out')), 5000)
+    this._ipTimeout = newTimeout(function () {
+      onExternalIp(new Error('timed out'))
+    }, 5000)
+
+    ExternalIP.get(onExternalIp)
   }
 
   if (options.levelup) {
@@ -96,6 +101,7 @@ function Node (options) {
 
   function onExternalIp (err, ip) {
     if (err) self._debug('unable to get own public ip')
+    else clearTimeout(self._ipTimeout)
 
     self.ip = ip
     if (ip && self._localIPs.indexOf(ip) === -1) {
@@ -285,11 +291,12 @@ Node.prototype.connect = function (addr, expectedFingerprint) {
   if (!this.ready) return this.once('ready', this.connect.bind(this, addr, expectedFingerprint))
 
   // if (!this.relay && this._localIPs.indexOf(hostPort[0]) !== -1) {
-  //   // most external known ip
-  //   // addr = this._localIPs[this._localIPs.length - 1] + ':' + hostPort[1]
-  //   // most local known ip
-  //   addr = this._localIPs[0] + ':' + hostPort[1]
-  // }
+  if (this._localIPs.indexOf(hostPort[0]) !== -1) {
+    // most external known ip
+    // addr = this._localIPs[this._localIPs.length - 1] + ':' + hostPort[1]
+    // most local known ip
+    addr = this._localIPs[0] + ':' + hostPort[1]
+  }
 
   if (this.address === addr) throw new Error('cannot connect to self')
 
@@ -380,7 +387,7 @@ Node.prototype._restartPeer = function (peer, addr, expectedFingerprint) {
   peer.destroy(function () {
     if (!reconnect) return
 
-    setTimeout(function () {
+    newTimeout(function () {
       if (self._destroying) return
 
       self._debug('reconnecting to ' + addr)
@@ -567,7 +574,7 @@ Node.prototype._announceForever = function (infoHash) {
       self._dht.announce(infoHash, self.port)
     }
 
-    self._announceTimeouts[infoHash] = setTimeout(announce, interval)
+    self._announceTimeouts[infoHash] = newTimeout(announce, interval)
   }
 }
 
@@ -585,7 +592,7 @@ Node.prototype._lookupForever = function (infoHash) {
     if (self._destroying) return
 
     self._dht.lookup(infoHash)
-    self._lookupTimeouts[infoHash] = setTimeout(lookup, interval)
+    self._lookupTimeouts[infoHash] = newTimeout(lookup, interval)
   }
 }
 
@@ -674,4 +681,8 @@ Node.prototype._destroy = function (cb) {
   }
 }
 
-module.exports = Node
+function newTimeout (fn, millis) {
+  var t = setTimeout(fn, millis)
+  if (t.unref) t.unref()
+  return t
+}
