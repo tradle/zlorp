@@ -308,6 +308,7 @@ Node.prototype.connect = function (addr, expectedFingerprint) {
   if (this.blacklist[addr] || this.getPeerWith('address', addr)) return
 
   var peer = this.scouts[addr] = new Peer({
+    node: this,
     otrOptions: this._otrOptions,
     instanceTag: this.instanceTag,
     key: this.key,
