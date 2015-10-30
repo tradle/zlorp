@@ -17,6 +17,7 @@ var DHT = require('bittorrent-dht')
 var Relay = require('dht-relay/relay')
 var ChainedObj = require('chained-obj')
 var constants = require('tradle-constants')
+var ExternalIP = require('../lib/externalIP')
 // var methodTimer = require('time-method')
 
 // var zlorpTimer = methodTimer.timeFunctions(Zlorp.prototype)
@@ -36,8 +37,14 @@ var dsaKeys = require('./dsaKeys')
 
 cleanup()
 
+test('external ip', function (t) {
+  ExternalIP.get(function () {
+    t.end()
+  })
+})
+
 test('basic', function (t) {
-  t.timeoutAfter(10000)
+  t.timeoutAfter(20000)
 
   makeConnectedNodes(2, function (nodes) {
     var a = nodes[0]
@@ -64,7 +71,7 @@ test('basic', function (t) {
 })
 
 test('long message', function (t) {
-  t.timeoutAfter(10000)
+  t.timeoutAfter(20000)
 
   makeConnectedNodes(2, function (nodes) {
     var a = nodes[0]
@@ -112,7 +119,7 @@ test('long message', function (t) {
 })
 
 test('relay', function (t) {
-  t.timeoutAfter(10000)
+  t.timeoutAfter(20000)
 
   var relayAddr = {
     port: basePort++,
@@ -214,7 +221,7 @@ test('persistent instance tags', function (t) {
 })
 
 test('destroy', function (t) {
-  t.timeoutAfter(10000)
+  t.timeoutAfter(20000)
   var dht = new DHT({ bootstrap: false })
   var node = new Zlorp({
     leveldown: leveldown,
@@ -315,7 +322,7 @@ test('connect knowing ip:port', function (t) {
 })
 
 test('detect interest from strangers', function (t) {
-  t.timeoutAfter(10000)
+  t.timeoutAfter(20000)
   t.plan(1)
   makeConnectedNodes(2, function (nodes) {
     var a = nodes[0]
@@ -334,7 +341,7 @@ test('detect interest from strangers', function (t) {
 })
 
 test('track delivery', function (t) {
-  t.timeoutAfter(10000)
+  t.timeoutAfter(20000)
 
   makeConnectedNodes(2, function (nodes) {
     var a = nodes[0]
