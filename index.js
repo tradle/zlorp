@@ -290,8 +290,8 @@ Node.prototype.connect = function (addr, expectedFingerprint) {
 
   if (!this.ready) return this.once('ready', this.connect.bind(this, addr, expectedFingerprint))
 
-  // if (!this.relay && this._localIPs.indexOf(hostPort[0]) !== -1) {
-  if (this._localIPs.indexOf(hostPort[0]) !== -1) {
+  if (!this.relay && this._localIPs.indexOf(hostPort[0]) !== -1) {
+  // if (this._localIPs.indexOf(hostPort[0]) !== -1) {
     // most external known ip
     // addr = this._localIPs[this._localIPs.length - 1] + ':' + hostPort[1]
     // most local known ip
