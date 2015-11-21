@@ -1,7 +1,7 @@
 {
   "name": "zlorp",
   "version": "2.0.0",
-  "description": "",
+  "description": "OTR encrypted, NAT-breaking p2p conversations",
   "main": "index.js",
   "scripts": {
     "test": "node test && MULTIPLEX=1 node test",
