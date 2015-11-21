@@ -26,30 +26,30 @@
   },
   "homepage": "https://github.com/tradle/zlorp",
   "dependencies": {
-    "bittorrent-dht": "tradle/bittorrent-dht",
+    "@tradle/bittorrent-dht": "^3.2.1",
+    "@tradle/dht-relay": "^1.0.0",
+    "@tradle/otr": "^0.2.15",
+    "@tradle/talko": "^1.0.0",
     "buffer-equal": "0.0.1",
     "debug": "^2.1.3",
-    "dht-relay": "mvayngrib/dht-relay",
     "elistener": "^1.0.2",
     "exit-hook": "git://github.com/mvayngrib/exit-hook.git",
     "levelup": "~0.18.0",
     "once": "^1.3.2",
-    "otr": "git://github.com/mvayngrib/otr#master",
     "safecb": "0.0.1",
     "simple-get": "^1.3.3",
     "sock-plex": "^1.0.0",
-    "talko": "mvayngrib/talko#client2",
     "thunky": "^0.1.0",
     "typeforce": "^1.0.0",
     "xtend": "^4.0.0"
   },
   "devDependencies": {
-    "chained-obj": "^1.0.3",
+    "@tradle/chained-obj": "^1.0.3",
+    "@tradle/constants": "^1.1.0",
     "memdown": "^1.0.0",
     "pre-commit": "^1.0.7",
     "rimraf": "^2.4.0",
     "split": "^0.3.3",
-    "tape": "^4.0.0",
-    "tradle-constants": "^1.1.0"
+    "tape": "^4.0.0"
   }
 }

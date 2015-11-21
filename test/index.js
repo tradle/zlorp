@@ -11,12 +11,12 @@ var bufferEquals = require('buffer-equal')
 var rimraf = require('rimraf')
 var leveldown = require('memdown')
 var test = require('tape')
-var DSA = require('otr').DSA
+var DSA = require('@tradle/otr').DSA
 var Zlorp = require('../')
-var DHT = require('bittorrent-dht')
-var Relay = require('dht-relay/relay')
-var ChainedObj = require('chained-obj')
-var constants = require('tradle-constants')
+var DHT = require('@tradle/bittorrent-dht')
+var Relay = require('@tradle/dht-relay/relay')
+var ChainedObj = require('@tradle/chained-obj')
+var constants = require('@tradle/constants')
 // var methodTimer = require('time-method')
 
 // var zlorpTimer = methodTimer.timeFunctions(Zlorp.prototype)
